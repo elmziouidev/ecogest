@@ -1204,8 +1204,18 @@ const USER_ROLES = {
   "a.bahalla@esrmi.ma":    { role: "directrice",     nom: "Adila BAHALLA",           titre: "Responsable Communication" },
 };
 
-// Fonction pour obtenir le token MSAL via popup
+// Fonction login par REDIRECTION (plus fiable que popup)
 async function msalLogin() {
+  // Vérifier si on revient d'une redirection Microsoft
+  const hash = window.location.hash;
+  if (hash && hash.includes("access_token")) {
+    const params = new URLSearchParams(hash.substring(1));
+    const token = params.get("access_token");
+    // Nettoyer l'URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return token;
+  }
+  // Sinon rediriger vers Microsoft
   const authorizeUrl = `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.0/authorize?` +
     `client_id=${MSAL_CONFIG.clientId}` +
     `&response_type=token` +
@@ -1214,23 +1224,8 @@ async function msalLogin() {
     `&response_mode=fragment` +
     `&nonce=${Math.random().toString(36).substring(2)}` +
     `&prompt=select_account`;
-
-  return new Promise((resolve, reject) => {
-    const popup = window.open(authorizeUrl, "msalPopup", "width=500,height=600,left=300,top=100");
-    const timer = setInterval(() => {
-      try {
-        if (popup.closed) { clearInterval(timer); reject(new Error("Popup fermé")); return; }
-        const hash = popup.location.hash;
-        if (hash && hash.includes("access_token")) {
-          clearInterval(timer);
-          popup.close();
-          const params = new URLSearchParams(hash.substring(1));
-          resolve(params.get("access_token"));
-        }
-      } catch (e) {}
-    }, 500);
-    setTimeout(() => { clearInterval(timer); if (!popup.closed) popup.close(); reject(new Error("Timeout")); }, 120000);
-  });
+  window.location.href = authorizeUrl;
+  return null;
 }
 
 async function getUserInfo(token) {
@@ -1251,24 +1246,9 @@ function LoginScreen({ onLogin }) {
     setLoading(true);
     setError("");
     try {
-      const token = await msalLogin();
-      const userInfo = await getUserInfo(token);
-      const email = (userInfo.mail || userInfo.userPrincipalName || "").toLowerCase();
-      const userConfig = USER_ROLES[email];
-
-      if (!userConfig) {
-        setError(`Accès non autorisé pour ${email}. Contactez l'administrateur.`);
-        setLoading(false);
-        return;
-      }
-
-      onLogin(userConfig.role, { email, nom: userConfig.nom, token });
+      await msalLogin(); // redirige vers Microsoft, pas de retour ici
     } catch (err) {
-      if (err.message === "Popup fermé") {
-        setError("Connexion annulée.");
-      } else {
-        setError("Erreur de connexion. Réessayez.");
-      }
+      setError("Erreur de connexion. Réessayez.");
       setLoading(false);
     }
   };
@@ -1358,14 +1338,48 @@ function App() {
   const [active, setActive] = useState("dashboard");
   const [data, setData] = useState(DEMO);
   const [toastMsg, setToastMsg] = useState("");
+  const [checking, setChecking] = useState(true);
 
   const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(""), 3000); };
+
+  // Vérifier au chargement si on revient d'une redirection Microsoft
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const token = params.get("access_token");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      getUserInfo(token).then(userInfo => {
+        const email = (userInfo.mail || userInfo.userPrincipalName || "").toLowerCase();
+        const userConfig = USER_ROLES[email];
+        if (userConfig) {
+          setUser({ email, nom: userConfig.nom, titre: userConfig.titre, token });
+          setRole(userConfig.role);
+          setActive(NAV_BY_ROLE[userConfig.role][0]);
+        } else {
+          alert(`Accès non autorisé pour ${email}.\nContactez l'administrateur : i.elmzioui@esrmi.ma`);
+        }
+        setChecking(false);
+      }).catch(() => setChecking(false));
+    } else {
+      setChecking(false);
+    }
+  }, []);
 
   const handleLogin = (r, userInfo) => {
     setRole(r);
     setUser(userInfo);
     setActive(NAV_BY_ROLE[r][0]);
   };
+
+  if (checking) return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(135deg, ${C.navy} 0%, #2d4a8a 100%)`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Segoe UI', system-ui, sans-serif" }}>
+      <div style={{ color:"white", textAlign:"center" }}>
+        <div style={{ fontSize:40, marginBottom:16 }}>⏳</div>
+        <div style={{ fontSize:16, fontWeight:600 }}>Vérification de votre compte Microsoft...</div>
+      </div>
+    </div>
+  );
 
   if (!role) return <LoginScreen onLogin={handleLogin} />;
 
