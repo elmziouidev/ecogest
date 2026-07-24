@@ -37,6 +37,7 @@ const SP = {
     cours:       "Cours",
     inscriptions:"Inscriptions",
     annonces:    "Annonces",
+    visiteurs:   "Visiteurs",
   },
 };
 
@@ -163,6 +164,10 @@ const DEMO = {
   annonces: [
     { id:1, titre:"Rentrée 2026-2027", contenu:"La rentrée est fixée au 15 septembre 2026.", auteur:"Direction", date:"2026-07-01", cible:"Tous" },
     { id:2, titre:"Dépôt des PFA",     contenu:"Les projets de fin d'année doivent être déposés avant le 30 juin.", auteur:"Scolarité", date:"2026-06-01", cible:"Étudiants" },
+  ],
+  visiteurs: [
+    { id:1, nom:"Rachidi", prenom:"Imane", cin:"BK123456", dateNaissance:"2005-03-14", lieuNaissance:"Rabat", telephone:"0612345678", email:"i.rachidi@gmail.com", adresse:"12 Rue des Fleurs", ville:"Rabat", quartier:"Agdal", bacAnnee:"2024", bacMention:"Bien", bacSerie:"Sciences Économiques", etablissement:"Lycée Descartes", filiereS:"MGE", dateVisite:"2026-07-20", statut:"Visiteur", tarif:[ { tranche:"1ère tranche", montant:3000, echeance:"2026-09-15", paye:false }, { tranche:"2ème tranche", montant:3000, echeance:"2027-01-15", paye:false } ], documents:[] },
+    { id:2, nom:"Benkirane", prenom:"Karim", cin:"BE234567", dateNaissance:"2004-07-22", lieuNaissance:"Salé", telephone:"0623456789", email:"k.benkirane@gmail.com", adresse:"5 Avenue Mohammed V", ville:"Salé", quartier:"Centre", bacAnnee:"2023", bacMention:"Passable", bacSerie:"Sciences de Gestion", etablissement:"Lycée Ibn Khaldoun", filiereS:"GRH", dateVisite:"2026-07-21", statut:"Inscrit", tarif:[ { tranche:"1ère tranche", montant:3000, echeance:"2026-09-15", paye:true }, { tranche:"2ème tranche", montant:3000, echeance:"2027-01-15", paye:false } ], documents:[] },
   ],
 };
 
@@ -866,24 +871,319 @@ function Configuration({ toast }) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+//  MODULE : VISITEURS
+// ════════════════════════════════════════════════════════════════════
+const FILIERES = ["MGE", "GRH", "Finance", "Marketing", "Informatique de Gestion", "Commerce International"];
+const TARIFS_PAR_FILIERE = {
+  "MGE": 18000, "GRH": 17000, "Finance": 18000,
+  "Marketing": 17000, "Informatique de Gestion": 19000, "Commerce International": 18000,
+};
+
+function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit }) {
+  const [doc, setDoc] = useState(visiteur.documents || []);
+  const [tarif, setTarif] = useState(visiteur.tarif || []);
+
+  const handleUpload = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const newDoc = { type, nom: file.name, date: new Date().toISOString().split("T")[0], taille: `${(file.size/1024).toFixed(0)} Ko` };
+    setDoc(d => [...d, newDoc]);
+  };
+
+  const totalTarif = tarif.reduce((s, t) => s + t.montant, 0);
+  const totalPaye = tarif.filter(t => t.paye).reduce((s, t) => s + t.montant, 0);
+
+  return (
+    <Modal title={`Fiche Visiteur — ${visiteur.prenom} ${visiteur.nom}`} onClose={onClose} width={680}>
+      {/* Statut */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, padding:"10px 14px", background: visiteur.statut === "Inscrit" ? "#f0fff4" : visiteur.statut === "Non intéressé" ? "#fff5f5" : "#f0f7ff", borderRadius:8, border:`1px solid ${visiteur.statut === "Inscrit" ? "#9ae6b4" : visiteur.statut === "Non intéressé" ? "#feb2b2" : "#bee3f8"}` }}>
+        <div style={{ fontSize:13, fontWeight:600, color: visiteur.statut === "Inscrit" ? C.green : visiteur.statut === "Non intéressé" ? C.red : C.navy }}>
+          Statut : {visiteur.statut}
+        </div>
+        {canEdit && visiteur.statut === "Visiteur" && (
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn small variant="primary" onClick={() => onConvertir(visiteur.id, "Inscrit")}>✓ Convertir en Étudiant</Btn>
+            <Btn small variant="danger" onClick={() => onConvertir(visiteur.id, "Non intéressé")}>✗ Non intéressé</Btn>
+          </div>
+        )}
+        {visiteur.statut === "Inscrit" && <Badge color={C.green}>✓ Converti en Étudiant</Badge>}
+      </div>
+
+      {/* Infos personnelles */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Informations personnelles</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"6px 14px" }}>
+          {[
+            ["Nom", visiteur.nom], ["Prénom", visiteur.prenom], ["CIN", visiteur.cin],
+            ["Date de naissance", visiteur.dateNaissance], ["Lieu de naissance", visiteur.lieuNaissance], ["Téléphone", visiteur.telephone],
+            ["Email", visiteur.email], ["Ville", visiteur.ville], ["Quartier", visiteur.quartier],
+            ["Adresse", visiteur.adresse],
+          ].map(([label, val]) => (
+            <div key={label} style={{ background:C.light, borderRadius:6, padding:"7px 10px" }}>
+              <div style={{ fontSize:10, color:C.muted, marginBottom:2 }}>{label}</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.navy }}>{val || "—"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Baccalauréat */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Baccalauréat & Formation souhaitée</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"6px 14px" }}>
+          {[
+            ["Année du Bac", visiteur.bacAnnee], ["Mention", visiteur.bacMention], ["Série", visiteur.bacSerie],
+            ["Établissement d'origine", visiteur.etablissement], ["Filière souhaitée", visiteur.filiereS], ["Date de visite", visiteur.dateVisite],
+          ].map(([label, val]) => (
+            <div key={label} style={{ background:C.light, borderRadius:6, padding:"7px 10px" }}>
+              <div style={{ fontSize:10, color:C.muted, marginBottom:2 }}>{label}</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.navy }}>{val || "—"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tarif */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
+          Tarif de formation — Total : {totalTarif.toLocaleString()} MAD | Payé : {totalPaye.toLocaleString()} MAD | Reste : {(totalTarif - totalPaye).toLocaleString()} MAD
+        </div>
+        <div style={{ border:`1px solid ${C.border}`, borderRadius:8, overflow:"hidden" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+            <thead>
+              <tr style={{ background:C.light }}>
+                {["Tranche", "Montant (MAD)", "Échéance", "Statut"].map(h => (
+                  <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:600, color:"#555", fontSize:11 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tarif.map((t, i) => (
+                <tr key={i} style={{ borderTop:`1px solid ${C.light}` }}>
+                  <td style={{ padding:"8px 12px" }}>{t.tranche}</td>
+                  <td style={{ padding:"8px 12px", fontWeight:600 }}>{t.montant.toLocaleString()} MAD</td>
+                  <td style={{ padding:"8px 12px" }}>{t.echeance}</td>
+                  <td style={{ padding:"8px 12px" }}>
+                    <Badge color={t.paye ? C.green : C.orange}>{t.paye ? "✓ Payé" : "En attente"}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Documents */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Pièces jointes</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+          {["CIN / Carte d'identité", "Relevé de notes Bac", "Diplôme ou attestation", "Photo d'identité", "Autre document"].map(type => (
+            <label key={type} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", border:`1px dashed ${C.border}`, borderRadius:8, cursor:"pointer", fontSize:12, color:C.navy, background:C.light }}>
+              <span>📎</span> {type}
+              <input type="file" style={{ display:"none" }} onChange={e => handleUpload(e, type)} />
+            </label>
+          ))}
+        </div>
+        {doc.length > 0 && (
+          <div>
+            {doc.map((d, i) => (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 12px", background:C.light, borderRadius:6, marginBottom:4, fontSize:12 }}>
+                <span>📄 {d.type} — {d.nom}</span>
+                <span style={{ color:C.muted }}>{d.date} · {d.taille}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {doc.length === 0 && <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:12 }}>Aucun document uploadé</div>}
+      </div>
+    </Modal>
+  );
+}
+
+function Visiteurs({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "directrice"].includes(role);
+  const [showModal, setShowModal] = useState(false);
+  const [showFiche, setShowFiche] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterStatut, setFilterStatut] = useState("");
+  const [form, setForm] = useState({
+    nom:"", prenom:"", cin:"", dateNaissance:"", lieuNaissance:"", telephone:"", email:"",
+    adresse:"", ville:"", quartier:"", bacAnnee:"", bacMention:"Passable", bacSerie:"",
+    etablissement:"", filiereS:"MGE", dateVisite: new Date().toISOString().split("T")[0],
+    statut:"Visiteur", documents:[], tarif:[]
+  });
+
+  const genTarif = (filiere) => {
+    const total = TARIFS_PAR_FILIERE[filiere] || 18000;
+    const tranche = Math.round(total / 3);
+    return [
+      { tranche:"1ère tranche", montant:tranche, echeance:"2026-09-15", paye:false },
+      { tranche:"2ème tranche", montant:tranche, echeance:"2027-01-15", paye:false },
+      { tranche:"3ème tranche", montant:total - tranche*2, echeance:"2027-04-15", paye:false },
+    ];
+  };
+
+  const filtered = (data.visiteurs || []).filter(v => {
+    const matchSearch = `${v.nom} ${v.prenom} ${v.cin} ${v.telephone}`.toLowerCase().includes(search.toLowerCase());
+    const matchStatut = !filterStatut || v.statut === filterStatut;
+    return matchSearch && matchStatut;
+  });
+
+  const handleSave = () => {
+    const newV = { ...form, id: Date.now(), tarif: genTarif(form.filiereS) };
+    setData(d => ({ ...d, visiteurs: [...(d.visiteurs||[]), newV] }));
+    toast("Visiteur enregistré dans SharePoint ✓");
+    setShowModal(false);
+    setForm({ nom:"", prenom:"", cin:"", dateNaissance:"", lieuNaissance:"", telephone:"", email:"", adresse:"", ville:"", quartier:"", bacAnnee:"", bacMention:"Passable", bacSerie:"", etablissement:"", filiereS:"MGE", dateVisite: new Date().toISOString().split("T")[0], statut:"Visiteur", documents:[], tarif:[] });
+  };
+
+  const handleConvertir = (id, newStatut) => {
+    setData(d => ({
+      ...d,
+      visiteurs: d.visiteurs.map(v => v.id === id ? { ...v, statut: newStatut } : v),
+      etudiants: newStatut === "Inscrit"
+        ? [...d.etudiants, (() => { const v = d.visiteurs.find(x => x.id === id); return { id: Date.now(), nom: v.nom, prenom: v.prenom, cne: v.cin, filiere: v.filiereS, annee:"1ère", email: v.email, statut:"Actif", genre:"M" }; })()]
+        : d.etudiants
+    }));
+    toast(newStatut === "Inscrit" ? "✓ Visiteur converti en Étudiant dans SharePoint !" : "Statut mis à jour dans SharePoint ✓");
+    setShowFiche(null);
+  };
+
+  const stats = { total: (data.visiteurs||[]).length, visiteurs: (data.visiteurs||[]).filter(v=>v.statut==="Visiteur").length, inscrits: (data.visiteurs||[]).filter(v=>v.statut==="Inscrit").length, nonInt: (data.visiteurs||[]).filter(v=>v.statut==="Non intéressé").length };
+
+  return (
+    <div>
+      <PageHeader
+        title="Visiteurs & Prospects"
+        sub={`${stats.total} visiteur(s) — liste SharePoint "${SP.lists.visiteurs}"`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Nouveau visiteur</Btn>}
+      />
+
+      {/* Stats */}
+      <div style={{ display:"flex", gap:12, marginBottom:20 }}>
+        <StatCard label="Total visiteurs"   value={stats.total}    color={C.navy}   icon="👥" />
+        <StatCard label="En attente"         value={stats.visiteurs} color={C.orange} icon="⏳" />
+        <StatCard label="Inscrits"           value={stats.inscrits}  color={C.green}  icon="✅" />
+        <StatCard label="Non intéressés"    value={stats.nonInt}   color={C.red}    icon="❌" />
+        <StatCard label="Taux conversion"   value={stats.total ? `${Math.round(stats.inscrits/stats.total*100)}%` : "—"} color={C.purple} icon="📈" />
+      </div>
+
+      {/* Filtres */}
+      <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
+        <input placeholder="🔍 Rechercher nom, CIN, téléphone..." value={search} onChange={e => setSearch(e.target.value)}
+          style={{ flex:1, minWidth:200, padding:"9px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, fontFamily:"inherit" }} />
+        {["", "Visiteur", "Inscrit", "Non intéressé"].map(s => (
+          <button key={s} onClick={() => setFilterStatut(s)} style={{
+            padding:"8px 14px", borderRadius:20, border:`1px solid ${C.border}`, cursor:"pointer",
+            background: filterStatut === s ? C.navy : C.white, color: filterStatut === s ? C.white : "#555",
+            fontSize:12, fontFamily:"inherit"
+          }}>{s || "Tous"}</button>
+        ))}
+      </div>
+
+      <Card style={{ overflow:"hidden" }}>
+        <DataTable
+          cols={[
+            { key:"prenom",      label:"Prénom" },
+            { key:"nom",         label:"Nom" },
+            { key:"cin",         label:"CIN" },
+            { key:"telephone",   label:"Téléphone" },
+            { key:"ville",       label:"Ville" },
+            { key:"filiereS",    label:"Filière souhaitée" },
+            { key:"dateVisite",  label:"Date visite" },
+            { key:"statut",      label:"Statut", render: v => <Badge color={v==="Inscrit"?C.green:v==="Non intéressé"?C.red:C.orange}>{v}</Badge> },
+            { key:"id", label:"Fiche", render: (_, row) => (
+              <Btn small variant="navy" onClick={() => setShowFiche(row)}>Voir fiche</Btn>
+            )},
+          ]}
+          rows={filtered}
+          emptyMsg="Aucun visiteur enregistré"
+        />
+      </Card>
+
+      {/* Modal ajout */}
+      {showModal && (
+        <Modal title="Nouveau visiteur → SharePoint" onClose={() => setShowModal(false)} width={640}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Informations personnelles</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0 14px" }}>
+            <Input label="Nom *" value={form.nom} onChange={e => setForm(f=>({...f,nom:e.target.value}))} />
+            <Input label="Prénom *" value={form.prenom} onChange={e => setForm(f=>({...f,prenom:e.target.value}))} />
+            <Input label="CIN *" value={form.cin} onChange={e => setForm(f=>({...f,cin:e.target.value}))} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 14px" }}>
+            <Input label="Date de naissance" type="date" value={form.dateNaissance} onChange={e => setForm(f=>({...f,dateNaissance:e.target.value}))} />
+            <Input label="Lieu de naissance" value={form.lieuNaissance} onChange={e => setForm(f=>({...f,lieuNaissance:e.target.value}))} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 14px" }}>
+            <Input label="Téléphone *" value={form.telephone} onChange={e => setForm(f=>({...f,telephone:e.target.value}))} placeholder="06XXXXXXXX" />
+            <Input label="Email" type="email" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0 14px" }}>
+            <Input label="Adresse" value={form.adresse} onChange={e => setForm(f=>({...f,adresse:e.target.value}))} />
+            <Input label="Ville" value={form.ville} onChange={e => setForm(f=>({...f,ville:e.target.value}))} />
+            <Input label="Quartier" value={form.quartier} onChange={e => setForm(f=>({...f,quartier:e.target.value}))} />
+          </div>
+
+          <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", margin:"10px 0" }}>Baccalauréat & Formation</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0 14px" }}>
+            <Input label="Année du Bac" value={form.bacAnnee} onChange={e => setForm(f=>({...f,bacAnnee:e.target.value}))} placeholder="2024" />
+            <Sel label="Mention" value={form.bacMention} onChange={e => setForm(f=>({...f,bacMention:e.target.value}))}>
+              <option>Très bien</option><option>Bien</option><option>Assez bien</option><option>Passable</option>
+            </Sel>
+            <Input label="Série du Bac" value={form.bacSerie} onChange={e => setForm(f=>({...f,bacSerie:e.target.value}))} placeholder="Sciences Éco..." />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0 14px" }}>
+            <Input label="Établissement d'origine" value={form.etablissement} onChange={e => setForm(f=>({...f,etablissement:e.target.value}))} />
+            <Sel label="Filière souhaitée" value={form.filiereS} onChange={e => setForm(f=>({...f,filiereS:e.target.value}))}>
+              {FILIERES.map(f => <option key={f}>{f}</option>)}
+            </Sel>
+            <Input label="Date de visite" type="date" value={form.dateVisite} onChange={e => setForm(f=>({...f,dateVisite:e.target.value}))} />
+          </div>
+
+          <div style={{ background:"#f0f7ff", border:"1px solid #bee3f8", borderRadius:8, padding:"10px 14px", fontSize:12, color:"#2b6cb0", marginBottom:14 }}>
+            💰 Tarif filière <strong>{form.filiereS}</strong> : <strong>{(TARIFS_PAR_FILIERE[form.filiereS]||18000).toLocaleString()} MAD</strong> en 3 tranches · Données enregistrées dans SharePoint <strong>ECOGEST</strong>
+          </div>
+
+          <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.nom||!form.prenom||!form.cin||!form.telephone}>Enregistrer → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Fiche visiteur */}
+      {showFiche && (
+        <FicheVisiteur
+          visiteur={showFiche}
+          onClose={() => setShowFiche(null)}
+          onConvertir={handleConvertir}
+          canEdit={canEdit}
+        />
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
 //  NAVIGATION PAR RÔLE
 // ════════════════════════════════════════════════════════════════════
 const NAV_BY_ROLE = {
-  directrice:     ["dashboard", "etudiants", "professeurs", "notes", "presences", "cours", "annonces"],
-  administrateur: ["dashboard", "etudiants", "professeurs", "notes", "presences", "cours", "annonces", "config"],
+  directrice:     ["dashboard", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces"],
+  administrateur: ["dashboard", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces", "config"],
   professeur:     ["notes", "presences", "cours", "annonces"],
   etudiant:       ["notes", "presences", "annonces"],
 };
 
 const NAV_ITEMS = {
-  dashboard:   { label: "Tableau de bord", icon: "🏠" },
-  etudiants:   { label: "Étudiants",       icon: "🎓" },
-  professeurs: { label: "Professeurs",     icon: "👨‍🏫" },
-  notes:       { label: "Notes",           icon: "📊" },
-  presences:   { label: "Présences",       icon: "✅" },
-  cours:       { label: "Cours",           icon: "📚" },
-  annonces:    { label: "Annonces",        icon: "📢" },
-  config:      { label: "Config. SharePoint", icon: "⚙️" },
+  dashboard:   { label: "Tableau de bord",    icon: "🏠" },
+  visiteurs:   { label: "Visiteurs",           icon: "👥" },
+  etudiants:   { label: "Étudiants",           icon: "🎓" },
+  professeurs: { label: "Professeurs",         icon: "👨‍🏫" },
+  notes:       { label: "Notes",               icon: "📊" },
+  presences:   { label: "Présences",           icon: "✅" },
+  cours:       { label: "Cours",               icon: "📚" },
+  annonces:    { label: "Annonces",            icon: "📢" },
+  config:      { label: "Config. SharePoint",  icon: "⚙️" },
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -949,7 +1249,7 @@ function App() {
   if (!role) return <LoginScreen onLogin={handleLogin} />;
 
   const navItems = NAV_BY_ROLE[role];
-  const PAGES = { dashboard: Dashboard, etudiants: Etudiants, professeurs: Professeurs, notes: Notes, presences: Presences, cours: Cours, annonces: Annonces, config: Configuration };
+  const PAGES = { dashboard: Dashboard, visiteurs: Visiteurs, etudiants: Etudiants, professeurs: Professeurs, notes: Notes, presences: Presences, cours: Cours, annonces: Annonces, config: Configuration };
   const Page = PAGES[active];
   const roleInfo = ROLES[role];
 
