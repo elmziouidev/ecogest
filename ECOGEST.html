@@ -154,6 +154,7 @@ function Etudiants({ data, setData, role, toast }) {
   const handleSave = () => {
     const newEt = { ...form, id: Date.now() };
     setData((d) => ({ ...d, etudiants: [...d.etudiants, newEt] }));
+    if (user?.token) saveToSP("Etudiants", { Nom: form.nom, Prenom: form.prenom, CNE: form.cne, CIN: form.cin, Filiere: form.filiere, Annee: form.annee, Email: form.email, Telephone: form.telephone || "", Statut: form.statut, Genre: form.genre, Ville: form.ville || "", Quartier: form.quartier || "", Adresse: form.adresse || "", NumInscription: form.numInscription || "", Promotion: form.promotion || "", ResponsableFinancier: form.responsableFinancier || "" }, user.token);
     toast("\xC9tudiant enregistr\xE9 dans SharePoint \u2713");
     setShowModal(false);
     setForm({ nom: "", prenom: "", cne: "", filiere: "MGE", annee: "1\xE8re", email: "", statut: "Actif", genre: "M" });
@@ -197,6 +198,7 @@ function Professeurs({ data, setData, role, toast }) {
   const [form, setForm] = useState({ nom: "", prenom: "", cin: "", matiere: "", email: "", statut: "Actif", type: "Permanent" });
   const handleSave = () => {
     setData((d) => ({ ...d, professeurs: [...d.professeurs, { ...form, id: Date.now() }] }));
+    if (user?.token) saveToSP("Professeurs", { Nom: form.nom, Prenom: form.prenom, CIN: form.cin, Matiere: form.matiere, Email: form.email, Telephone: form.telephone || "", Type: form.type, Statut: form.statut }, user.token);
     toast("Professeur enregistr\xE9 dans SharePoint \u2713");
     setShowModal(false);
     setForm({ nom: "", prenom: "", cin: "", matiere: "", email: "", statut: "Actif", type: "Permanent" });
@@ -236,6 +238,7 @@ function Notes({ data, setData, role, toast }) {
     const et = data.etudiants.find((e) => e.id === parseInt(form.etudiantId));
     const newNote = { ...form, id: Date.now(), note: parseFloat(form.note), etudiant: et ? `${et.prenom} ${et.nom}` : form.etudiant };
     setData((d) => ({ ...d, notes: [...d.notes, newNote] }));
+    if (user?.token) saveToSP("Notes", { EtudiantId: parseInt(form.etudiantId), Etudiant: newNote.etudiant, Module: form.module, Note: parseFloat(form.note), Semestre: form.semestre, Coef: parseInt(form.coef), DateNote: form.date }, user.token);
     toast("Note enregistr\xE9e dans SharePoint \u2713");
     setShowModal(false);
   };
@@ -290,6 +293,7 @@ function Presences({ data, setData, role, toast }) {
   const justifie = data.presences.filter((p) => p.statut === "Justifi\xE9").length;
   const handleSave = () => {
     setData((d) => ({ ...d, presences: [...d.presences, { ...form, id: Date.now() }] }));
+    if (user?.token) saveToSP("Presences", { Etudiant: form.etudiant, Module: form.module, DatePresence: form.date, Heure: form.heure, Statut: form.statut }, user.token);
     toast("Pr\xE9sence enregistr\xE9e dans SharePoint \u2713");
     setShowModal(false);
   };
@@ -320,6 +324,7 @@ function Cours({ data, setData, role, toast }) {
   const [form, setForm] = useState({ intitule: "", professeur: "", filiere: "MGE", semestre: "S1", heures: "", salle: "" });
   const handleSave = () => {
     setData((d) => ({ ...d, cours: [...d.cours, { ...form, id: Date.now(), heures: parseInt(form.heures) }] }));
+    if (user?.token) saveToSP("Cours", { Intitule: form.intitule, Professeur: form.professeur, Filiere: form.filiere, Semestre: form.semestre, Heures: parseInt(form.heures), Salle: form.salle || "" }, user.token);
     toast("Cours enregistr\xE9 dans SharePoint \u2713");
     setShowModal(false);
     setForm({ intitule: "", professeur: "", filiere: "MGE", semestre: "S1", heures: "", salle: "" });
@@ -352,6 +357,7 @@ function Annonces({ data, setData, role, toast }) {
   const [form, setForm] = useState({ titre: "", contenu: "", auteur: "", cible: "Tous", date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0] });
   const handleSave = () => {
     setData((d) => ({ ...d, annonces: [{ ...form, id: Date.now() }, ...d.annonces] }));
+    if (user?.token) saveToSP("Annonces", { Titre: form.titre, Contenu: form.contenu, Auteur: form.auteur, Cible: form.cible, DateAnnonce: form.date }, user.token);
     toast("Annonce publi\xE9e dans SharePoint \u2713");
     setShowModal(false);
     setForm({ titre: "", contenu: "", auteur: "", cible: "Tous", date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0] });
@@ -431,6 +437,7 @@ function Filieres({ data, setData, role, toast }) {
       toast("Fili\xE8re mise \xE0 jour dans SharePoint \u2713");
     } else {
       setData((d) => ({ ...d, filieres: [...d.filieres || [], { ...form, id: Date.now() }] }));
+      if (user?.token) saveToSP("Filieres", { Code: form.code, Intitule: form.intitule, Niveau: form.niveau, Duree: form.duree, Capacite: form.capacite, Frais: form.frais, Statut: form.statut, Description: form.description || "", Responsable: form.responsable || "", Couleur: form.couleur }, user.token);
       toast("Fili\xE8re ajout\xE9e dans SharePoint \u2713");
     }
     setShowModal(false);
@@ -562,6 +569,7 @@ function Visiteurs({ data, setData, role, toast }) {
   const handleSave = () => {
     const newV = { ...form, id: Date.now(), tarif: genTarif(form.filiereS) };
     setData((d) => ({ ...d, visiteurs: [...d.visiteurs || [], newV] }));
+    if (user?.token) saveToSP("Visiteurs", { Nom: form.nom, Prenom: form.prenom, CIN: form.cin, Telephone: form.telephone, Email: form.email || "", Ville: form.ville || "", Quartier: form.quartier || "", Adresse: form.adresse || "", BacAnnee: form.bacAnnee || "", BacMention: form.bacMention || "", BacSerie: form.bacSerie || "", Etablissement: form.etablissement || "", FiliereS: form.filiereS || "", DateVisite: form.dateVisite, Statut: form.statut }, user.token);
     toast("Visiteur enregistr\xE9 dans SharePoint \u2713");
     setShowModal(false);
     setForm({ nom: "", prenom: "", cin: "", dateNaissance: "", lieuNaissance: "", telephone: "", email: "", adresse: "", ville: "", quartier: "", bacAnnee: "", bacMention: "Passable", bacSerie: "", etablissement: "", filiereS: "MGE", dateVisite: (/* @__PURE__ */ new Date()).toISOString().split("T")[0], statut: "Visiteur", documents: [], tarif: [] });
@@ -631,7 +639,7 @@ function Visiteurs({ data, setData, role, toast }) {
   ));
 }
 const PAIEMENT_ADMINS = ["k.bouabid@esrmi.ma", "a.bahalla@esrmi.ma", "fz.zniber@esrmi.ma"];
-const canAccessPaiement = (user) => user && PAIEMENT_ADMINS.includes(user.email);
+const canAccessPaiement = (user2) => user2 && PAIEMENT_ADMINS.includes(user2.email);
 const DEMO_PAIEMENT = {
   parametres: [
     {
@@ -797,7 +805,7 @@ function genererRecu(ep, versement) {
   w.document.close();
   w.print();
 }
-function FichePaiementEtudiant({ ep, onClose, onSave, user }) {
+function FichePaiementEtudiant({ ep, onClose, onSave, user: user2 }) {
   const [tab, setTab] = useState("solde");
   const [showVersement, setShowVersement] = useState(false);
   const [showRemise, setShowRemise] = useState(false);
@@ -813,7 +821,7 @@ function FichePaiementEtudiant({ ep, onClose, onSave, user }) {
     const montant = parseFloat(versForm.montant);
     if (!montant || montant <= 0) return;
     const recu = genRecu();
-    const newVers = { ...versForm, id: Date.now(), montant, recu, agent: user?.email || "admin" };
+    const newVers = { ...versForm, id: Date.now(), montant, recu, agent: user2?.email || "admin" };
     const newEch = ep.echeances.map((e) => {
       if (e.id === parseInt(versForm.echeanceId)) return { ...e, statut: "Pay\xE9" };
       return e;
@@ -823,7 +831,7 @@ function FichePaiementEtudiant({ ep, onClose, onSave, user }) {
       totalPaye: ep.totalPaye + montant,
       versements: [...ep.versements, newVers],
       echeances: newEch,
-      historique: [...ep.historique, { date: today(), heure: (/* @__PURE__ */ new Date()).toLocaleTimeString(), action: "Versement", montant, agent: user?.email, detail: `${versForm.mode} - ${recu}` }]
+      historique: [...ep.historique, { date: today(), heure: (/* @__PURE__ */ new Date()).toLocaleTimeString(), action: "Versement", montant, agent: user2?.email, detail: `${versForm.mode} - ${recu}` }]
     };
     onSave(newEp);
     setTimeout(() => genererRecu(newEp, newVers), 200);
@@ -837,7 +845,7 @@ function FichePaiementEtudiant({ ep, onClose, onSave, user }) {
       ...ep,
       remises: [...ep.remises, newRemise],
       totalAPayer: ep.totalAPayer - montant,
-      historique: [...ep.historique, { date: today(), heure: (/* @__PURE__ */ new Date()).toLocaleTimeString(), action: "Remise", montant, agent: user?.email, detail: remiseForm.motif }]
+      historique: [...ep.historique, { date: today(), heure: (/* @__PURE__ */ new Date()).toLocaleTimeString(), action: "Remise", montant, agent: user2?.email, detail: remiseForm.motif }]
     };
     onSave(newEp);
     setShowRemise(false);
@@ -895,7 +903,7 @@ function FichePaiementEtudiant({ ep, onClose, onSave, user }) {
     return /* @__PURE__ */ React.createElement("div", { key: e.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: retard ? "#fff5f5" : C.light, borderRadius: 8, marginBottom: 6, border: `1px solid ${retard ? "#fecaca" : C.border}` } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13 } }, e.type), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, "\xC9ch\xE9ance: ", e.date)), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: C.navy } }, formatMAD(e.montant)), /* @__PURE__ */ React.createElement(Badge, { color: col }, statutAff)));
   })), tab === "versements" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, ep.versements.length, " versement(s)"), /* @__PURE__ */ React.createElement(Btn, { small: true, onClick: () => setShowVersement(true) }, "+ Versement")), ep.versements.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "Aucun versement enregistr\xE9") : ep.versements.map((v) => /* @__PURE__ */ React.createElement("div", { key: v.id, style: { background: C.light, borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14, color: C.navy } }, formatMAD(v.montant)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, v.date, " \xB7 ", v.mode, " \xB7 R\xE9f: ", v.reference), v.banque && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, "Banque: ", v.banque, " ", v.numCheque ? `\xB7 Ch\xE8que: ${v.numCheque}` : ""), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Agent: ", v.agent)), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement(Badge, { color: C.green }, v.recu), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6 } }, /* @__PURE__ */ React.createElement(Btn, { small: true, variant: "light", onClick: () => genererRecu(ep, v) }, "\u{1F5A8}\uFE0F Re\xE7u"))))))), tab === "remises" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, ep.remises.length, " remise(s) accord\xE9e(s)"), /* @__PURE__ */ React.createElement(Btn, { small: true, onClick: () => setShowRemise(true) }, "+ Remise")), ep.remises.map((r) => /* @__PURE__ */ React.createElement("div", { key: r.id, style: { background: r.valide ? "#f0fff4" : "#fff5f5", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: `1px solid ${r.valide ? "#9ae6b4" : "#fecaca"}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13, color: C.navy } }, r.type), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, r.motif), r.pourcentage > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, r.pourcentage, "% de r\xE9duction")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: r.valide ? C.green : C.orange } }, "-", formatMAD(r.montant)), /* @__PURE__ */ React.createElement(Badge, { color: r.valide ? C.green : C.orange }, r.valide ? "Valid\xE9e" : "En attente"))))), ep.remises.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "Aucune remise")), tab === "penalites" && /* @__PURE__ */ React.createElement("div", null, ep.penalites.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "\u2705 Aucune p\xE9nalit\xE9") : ep.penalites.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, style: { background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13, color: C.red } }, p.motif), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, "Appliqu\xE9e le ", p.date)), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: C.red } }, "+", formatMAD(p.montant)))))), tab === "historique" && /* @__PURE__ */ React.createElement("div", null, ep.historique.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "Aucun historique") : [...ep.historique].reverse().map((h, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", gap: 12, padding: "8px 0", borderBottom: `1px solid ${C.light}` } }, /* @__PURE__ */ React.createElement("div", { style: { width: 36, height: 36, borderRadius: 8, background: C.light, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 } }, h.action === "Versement" ? "\u{1F4B3}" : h.action === "Remise" ? "\u{1F381}" : "\u{1F4DD}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13 } }, h.action), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, h.date, " ", h.heure, " \xB7 ", h.agent), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#555" } }, h.detail)), h.montant && /* @__PURE__ */ React.createElement("div", { style: { marginLeft: "auto", fontWeight: 700, color: C.navy, fontSize: 14 } }, formatMAD(h.montant))))), showVersement && /* @__PURE__ */ React.createElement(Modal, { title: "Enregistrer un versement", onClose: () => setShowVersement(false), width: 480 }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "Date *", type: "date", value: versForm.date, onChange: (e) => setVersForm((f) => ({ ...f, date: e.target.value })) }), /* @__PURE__ */ React.createElement(Input, { label: "Montant (MAD) *", type: "number", value: versForm.montant, onChange: (e) => setVersForm((f) => ({ ...f, montant: e.target.value })), placeholder: "0.00" })), /* @__PURE__ */ React.createElement(Sel, { label: "Mode de paiement *", value: versForm.mode, onChange: (e) => setVersForm((f) => ({ ...f, mode: e.target.value })) }, ["Esp\xE8ces", "Ch\xE8que", "Virement", "Carte bancaire", "Paiement en ligne"].map((m) => /* @__PURE__ */ React.createElement("option", { key: m }, m))), /* @__PURE__ */ React.createElement(Sel, { label: "\xC9ch\xE9ance concern\xE9e", value: versForm.echeanceId, onChange: (e) => setVersForm((f) => ({ ...f, echeanceId: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner une \xE9ch\xE9ance --"), ep.echeances.filter((e) => e.statut !== "Pay\xE9").map((e) => /* @__PURE__ */ React.createElement("option", { key: e.id, value: e.id }, e.type, " \u2014 ", formatMAD(e.montant)))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "R\xE9f\xE9rence", value: versForm.reference, onChange: (e) => setVersForm((f) => ({ ...f, reference: e.target.value })), placeholder: "VIR001..." }), /* @__PURE__ */ React.createElement(Input, { label: "Banque", value: versForm.banque, onChange: (e) => setVersForm((f) => ({ ...f, banque: e.target.value })), placeholder: "Attijariwafa..." })), versForm.mode === "Ch\xE8que" && /* @__PURE__ */ React.createElement(Input, { label: "N\xB0 Ch\xE8que", value: versForm.numCheque, onChange: (e) => setVersForm((f) => ({ ...f, numCheque: e.target.value })) }), /* @__PURE__ */ React.createElement("div", { style: { background: "#f0fff4", border: "1px solid #9ae6b4", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: C.green, marginBottom: 12 } }, "\u2705 Un re\xE7u sera g\xE9n\xE9r\xE9 automatiquement apr\xE8s enregistrement"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowVersement(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleVersement, disabled: !versForm.montant }, "\u{1F4B3} Enregistrer & G\xE9n\xE9rer re\xE7u"))), showRemise && /* @__PURE__ */ React.createElement(Modal, { title: "Accorder une remise", onClose: () => setShowRemise(false), width: 440 }, /* @__PURE__ */ React.createElement(Sel, { label: "Type de remise *", value: remiseForm.type, onChange: (e) => setRemiseForm((f) => ({ ...f, type: e.target.value })) }, ["Bourse", "R\xE9duction familiale", "R\xE9duction exceptionnelle", "Remise partenaire", "Remise personnel"].map((t) => /* @__PURE__ */ React.createElement("option", { key: t }, t))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "Pourcentage (%)", type: "number", min: "0", max: "100", value: remiseForm.pourcentage, onChange: (e) => setRemiseForm((f) => ({ ...f, pourcentage: e.target.value })) }), /* @__PURE__ */ React.createElement(Input, { label: "Montant fixe (MAD)", type: "number", value: remiseForm.montant, onChange: (e) => setRemiseForm((f) => ({ ...f, montant: e.target.value })) })), /* @__PURE__ */ React.createElement(Input, { label: "Motif *", value: remiseForm.motif, onChange: (e) => setRemiseForm((f) => ({ ...f, motif: e.target.value })) }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: remiseForm.valide, onChange: (e) => setRemiseForm((f) => ({ ...f, valide: e.target.checked })), id: "valide" }), /* @__PURE__ */ React.createElement("label", { htmlFor: "valide", style: { fontSize: 13, color: "#555" } }, "Valid\xE9 par la direction")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowRemise(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleRemise, disabled: !remiseForm.motif }, "\u{1F381} Appliquer la remise"))), showEcheancier && /* @__PURE__ */ React.createElement(Modal, { title: "G\xE9n\xE9rer un \xE9ch\xE9ancier", onClose: () => setShowEcheancier(false), width: 400 }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.muted, marginBottom: 14 } }, "Total \xE0 payer: ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.navy } }, formatMAD(ep.totalAPayer))), /* @__PURE__ */ React.createElement(Sel, { label: "Type d'\xE9ch\xE9ancier", value: echeancierType, onChange: (e) => setEcheancierType(e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "annuel" }, "Paiement annuel (1 versement)"), /* @__PURE__ */ React.createElement("option", { value: "semestriel" }, "Semestriel (2 versements)"), /* @__PURE__ */ React.createElement("option", { value: "trimestriel" }, "Trimestriel (3 versements)"), /* @__PURE__ */ React.createElement("option", { value: "mensuel" }, "Mensuel (10 mensualit\xE9s)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowEcheancier(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: genEcheancier }, "\u{1F4C5} G\xE9n\xE9rer l'\xE9ch\xE9ancier"))));
 }
-function Paiements({ data, setData, role, user, toast }) {
+function Paiements({ data, setData, role, user: user2, toast }) {
   const [tab, setTab] = useState("dashboard");
   const [search, setSearch] = useState("");
   const [showFiche, setShowFiche] = useState(null);
@@ -903,6 +911,10 @@ function Paiements({ data, setData, role, user, toast }) {
   const pData = data.paiements || DEMO_PAIEMENT;
   const savePData = (newPData) => {
     setData((d) => ({ ...d, paiements: newPData }));
+    if (user2?.token) {
+      const ep = newPData.etudiants_paiement.find((e) => e.id === (newPData.etudiants_paiement.slice(-1)[0] || {}).id);
+      if (ep) saveToSP("Paiements", { EtudiantId: ep.etudiantId, NumInscription: ep.numInscription, NomEtudiant: `${ep.prenom} ${ep.nom}`, Filiere: ep.filiere, TotalAPayer: ep.totalAPayer, TotalPaye: ep.totalPaye, Echeances: JSON.stringify(ep.echeances), Versements: JSON.stringify(ep.versements), Remises: JSON.stringify(ep.remises), Penalites: JSON.stringify(ep.penalites), Historique: JSON.stringify(ep.historique) }, user2.token, ep._spId);
+    }
     toast("Donn\xE9es enregistr\xE9es dans SharePoint \u2713");
   };
   const updateEtudiantPaiement = (newEp) => {
@@ -998,7 +1010,7 @@ function Paiements({ data, setData, role, user, toast }) {
       ep: showFiche,
       onClose: () => setShowFiche(null),
       onSave: updateEtudiantPaiement,
-      user
+      user: user2
     }
   ));
 }
@@ -1117,13 +1129,88 @@ function LoginScreen({ onLogin }) {
     marginBottom: 10
   } }, loading ? /* @__PURE__ */ React.createElement("span", null, "\u23F3 Redirection vers Microsoft...") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("svg", { width: "20", height: "20", viewBox: "0 0 21 21" }, /* @__PURE__ */ React.createElement("rect", { x: "1", y: "1", width: "9", height: "9", fill: "#f25022" }), /* @__PURE__ */ React.createElement("rect", { x: "11", y: "1", width: "9", height: "9", fill: "#7fba00" }), /* @__PURE__ */ React.createElement("rect", { x: "1", y: "11", width: "9", height: "9", fill: "#00a4ef" }), /* @__PURE__ */ React.createElement("rect", { x: "11", y: "11", width: "9", height: "9", fill: "#ffb900" })), "Se connecter avec Microsoft 365")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", fontSize: 11, color: C.muted, lineHeight: 1.8, marginTop: 12 } }, "Support : ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.navy } }, "i.elmzioui@esrmi.ma"))));
 }
+async function loadAllFromSP(token) {
+  const siteId = await getSiteId(token);
+  const base = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`;
+  const headers = { Authorization: `Bearer ${token}` };
+  const fetchList = async (name) => {
+    try {
+      const res = await fetch(`${base}/${name}/items?expand=fields&$top=500`, { headers });
+      const d = await res.json();
+      return (d.value || []).map((i) => ({ _spId: i.id, ...i.fields }));
+    } catch (e) {
+      console.warn(`Error loading ${name}:`, e);
+      return [];
+    }
+  };
+  const [etudiants, professeurs, filieres, visiteurs, notes, presences, cours, annonces, paiements] = await Promise.all([
+    fetchList("Etudiants"),
+    fetchList("Professeurs"),
+    fetchList("Filieres"),
+    fetchList("Visiteurs"),
+    fetchList("Notes"),
+    fetchList("Presences"),
+    fetchList("Cours"),
+    fetchList("Annonces"),
+    fetchList("Paiements")
+  ]);
+  return {
+    etudiants: etudiants.map((e) => ({ id: e._spId, nom: e.Nom || e.nom, prenom: e.Prenom || e.prenom, cne: e.CNE || e.cne, cin: e.CIN || e.cin, filiere: e.Filiere || e.filiere, annee: e.Annee || e.annee, email: e.Email || e.email, telephone: e.Telephone || e.telephone, statut: e.Statut || e.statut || "Actif", genre: e.Genre || e.genre || "M", ville: e.Ville || e.ville, quartier: e.Quartier || e.quartier, adresse: e.Adresse || e.adresse, numInscription: e.NumInscription || e.numInscription, promotion: e.Promotion || e.promotion, responsableFinancier: e.ResponsableFinancier || e.responsableFinancier || "" })),
+    professeurs: professeurs.map((p) => ({ id: p._spId, nom: p.Nom || p.nom, prenom: p.Prenom || p.prenom, cin: p.CIN || p.cin, matiere: p.Matiere || p.matiere, email: p.Email || p.email, telephone: p.Telephone || p.telephone, type: p.Type || p.type || "Permanent", statut: p.Statut || p.statut || "Actif" })),
+    filieres: filieres.map((f) => ({ id: f._spId, code: f.Code || f.code, intitule: f.Intitule || f.intitule, niveau: f.Niveau || f.niveau, duree: parseInt(f.Duree || f.duree || 3), capacite: parseInt(f.Capacite || f.capacite || 30), frais: parseInt(f.Frais || f.frais || 18e3), statut: f.Statut || f.statut || "Active", description: f.Description || f.description || "", responsable: f.Responsable || f.responsable || "", couleur: f.Couleur || f.couleur || "#1a2f5e" })),
+    visiteurs: visiteurs.map((v) => ({ id: v._spId, nom: v.Nom || v.nom, prenom: v.Prenom || v.prenom, cin: v.CIN || v.cin, telephone: v.Telephone || v.telephone, email: v.Email || v.email, ville: v.Ville || v.ville, quartier: v.Quartier || v.quartier, adresse: v.Adresse || v.adresse, bacAnnee: v.BacAnnee || v.bacAnnee, bacMention: v.BacMention || v.bacMention, bacSerie: v.BacSerie || v.bacSerie, etablissement: v.Etablissement || v.etablissement, filiereS: v.FiliereS || v.filiereS, dateVisite: v.DateVisite || v.dateVisite, statut: v.Statut || v.statut || "Visiteur", tarif: [], documents: [] })),
+    notes: notes.map((n) => ({ id: n._spId, etudiantId: n.EtudiantId || n.etudiantId, etudiant: n.Etudiant || n.etudiant, module: n.Module || n.module, note: parseFloat(n.Note || n.note || 0), semestre: n.Semestre || n.semestre, coef: parseInt(n.Coef || n.coef || 1), date: n.DateNote || n.dateNote })),
+    presences: presences.map((p) => ({ id: p._spId, etudiant: p.Etudiant || p.etudiant, module: p.Module || p.module, date: p.DatePresence || p.datePresence, heure: p.Heure || p.heure, statut: p.Statut || p.statut })),
+    cours: cours.map((c) => ({ id: c._spId, intitule: c.Intitule || c.intitule, professeur: c.Professeur || c.professeur, filiere: c.Filiere || c.filiere, semestre: c.Semestre || c.semestre, heures: parseInt(c.Heures || c.heures || 0), salle: c.Salle || c.salle })),
+    annonces: annonces.map((a) => ({ id: a._spId, titre: a.Titre || a.titre, contenu: a.Contenu || a.contenu, auteur: a.Auteur || a.auteur, cible: a.Cible || a.cible, date: a.DateAnnonce || a.dateAnnonce })),
+    paiements: paiements.length > 0 ? {
+      etudiants_paiement: paiements.map((p) => ({
+        id: p._spId,
+        etudiantId: p.EtudiantId || p.etudiantId,
+        numInscription: p.NumInscription || p.numInscription,
+        nom: (p.NomEtudiant || p.nomEtudiant || "").split(" ").slice(1).join(" "),
+        prenom: (p.NomEtudiant || p.nomEtudiant || "").split(" ")[0],
+        filiere: p.Filiere || p.filiere,
+        totalAPayer: parseFloat(p.TotalAPayer || p.totalAPayer || 0),
+        totalPaye: parseFloat(p.TotalPaye || p.totalPaye || 0),
+        echeances: JSON.parse(p.Echeances || p.echeances || "[]"),
+        versements: JSON.parse(p.Versements || p.versements || "[]"),
+        remises: JSON.parse(p.Remises || p.remises || "[]"),
+        penalites: JSON.parse(p.Penalites || p.penalites || "[]"),
+        historique: JSON.parse(p.Historique || p.historique || "[]"),
+        statut: "Inscrit",
+        promotion: "2026-2027",
+        responsableFinancier: ""
+      })),
+      parametres: DEMO_PAIEMENT.parametres,
+      parametres_penalites: DEMO_PAIEMENT.parametres_penalites,
+      parametres_alertes: DEMO_PAIEMENT.parametres_alertes
+    } : null
+  };
+}
+async function saveToSP(list, fields, token, spId) {
+  try {
+    const siteId = await getSiteId(token);
+    const base = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items`;
+    const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+    if (spId) {
+      await fetch(`${base}/${spId}/fields`, { method: "PATCH", headers, body: JSON.stringify(fields) });
+    } else {
+      const res = await fetch(base, { method: "POST", headers, body: JSON.stringify({ fields }) });
+      return await res.json();
+    }
+  } catch (e) {
+    console.error("SP save error:", e);
+  }
+}
 function App() {
   const [role, setRole] = useState(null);
-  const [user, setUser] = useState(null);
+  const [user2, setUser] = useState(null);
   const [active, setActive] = useState("dashboard");
   const [data, setData] = useState(DEMO);
   const [toastMsg, setToastMsg] = useState("");
   const [checking, setChecking] = useState(true);
+  const [spLoading, setSpLoading] = useState(false);
   const toast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 3e3);
@@ -1149,14 +1236,24 @@ function App() {
           const email = (userInfo.mail || userInfo.userPrincipalName || "").toLowerCase();
           const userConfig = USER_ROLES[email];
           if (userConfig) {
-            setUser({ email, nom: userConfig.nom, titre: userConfig.titre, token });
+            const userObj = { email, nom: userConfig.nom, titre: userConfig.titre, token };
+            setUser(userObj);
             setRole(userConfig.role);
             setActive(NAV_BY_ROLE[userConfig.role][0]);
+            setChecking(false);
+            setSpLoading(true);
+            loadAllFromSP(token).then((spData) => {
+              setData(spData);
+              setSpLoading(false);
+            }).catch((err) => {
+              console.warn("SP load failed, using demo data:", err);
+              setSpLoading(false);
+            });
           } else {
             alert(`Acc\xE8s non autoris\xE9 pour ${email}.
 Contactez l'administrateur : i.elmzioui@esrmi.ma`);
+            setChecking(false);
           }
-          setChecking(false);
         });
       }).catch((err) => {
         console.error(err);
@@ -1177,7 +1274,7 @@ Contactez l'administrateur : i.elmzioui@esrmi.ma`);
   const PAGES = { dashboard: Dashboard, paiements: Paiements, filieres: Filieres, visiteurs: Visiteurs, etudiants: Etudiants, professeurs: Professeurs, notes: Notes, presences: Presences, cours: Cours, annonces: Annonces, config: Configuration };
   const Page = PAGES[active];
   const roleInfo = ROLES[role];
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", height: "100vh", fontFamily: "'Segoe UI', system-ui, sans-serif", background: C.light, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 230, background: C.navy, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 } }, "\xC9cole Sup\xE9rieure de Rabat"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 19, fontWeight: 700, color: C.white } }, "ECO", /* @__PURE__ */ React.createElement("span", { style: { color: C.orange } }, "GEST")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, "ECOGEST \xB7 SharePoint 365")), /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 10px 4px" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 32, height: 32, borderRadius: "50%", background: roleInfo.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 } }, roleInfo.icon), /* @__PURE__ */ React.createElement("div", { style: { overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: C.white, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, user?.nom || roleInfo.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: roleInfo.color } }, roleInfo.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, user?.email || "")))), /* @__PURE__ */ React.createElement("nav", { style: { flex: 1, padding: "8px 0" } }, navItems.map((key) => {
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", height: "100vh", fontFamily: "'Segoe UI', system-ui, sans-serif", background: C.light, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 230, background: C.navy, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 } }, "\xC9cole Sup\xE9rieure de Rabat"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 19, fontWeight: 700, color: C.white } }, "ECO", /* @__PURE__ */ React.createElement("span", { style: { color: C.orange } }, "GEST")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, "ECOGEST \xB7 SharePoint 365")), /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 10px 4px" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 32, height: 32, borderRadius: "50%", background: roleInfo.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 } }, roleInfo.icon), /* @__PURE__ */ React.createElement("div", { style: { overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: C.white, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, user2?.nom || roleInfo.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: roleInfo.color } }, roleInfo.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, user2?.email || "")))), /* @__PURE__ */ React.createElement("nav", { style: { flex: 1, padding: "8px 0" } }, navItems.map((key) => {
     const item = NAV_ITEMS[key];
     const isActive = active === key;
     return /* @__PURE__ */ React.createElement("button", { key, onClick: () => setActive(key), style: {
@@ -1197,7 +1294,7 @@ Contactez l'administrateur : i.elmzioui@esrmi.ma`);
       borderLeft: `3px solid ${isActive ? C.orange : "transparent"}`,
       transition: "all 0.12s"
     } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, item.icon), item.label);
-  })), /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.orange } }, "\u25CF "), "SharePoint ECOGEST", /* @__PURE__ */ React.createElement("br", null), "ecolesuperieurederabat", /* @__PURE__ */ React.createElement("br", null), ".sharepoint.com/sites/ECOGEST"), /* @__PURE__ */ React.createElement("button", { onClick: () => setRole(null), style: { marginTop: 10, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 12, padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", width: "100%" } }, "D\xE9connexion"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "24px 28px" } }, /* @__PURE__ */ React.createElement(Page, { data, setData, role, toast }))), /* @__PURE__ */ React.createElement(Toast, { msg: toastMsg }));
+  })), /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.orange } }, "\u25CF "), "SharePoint ECOGEST", /* @__PURE__ */ React.createElement("br", null), "ecolesuperieurederabat", /* @__PURE__ */ React.createElement("br", null), ".sharepoint.com/sites/ECOGEST"), /* @__PURE__ */ React.createElement("button", { onClick: () => setRole(null), style: { marginTop: 10, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 12, padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", width: "100%" } }, "D\xE9connexion"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "24px 28px" } }, /* @__PURE__ */ React.createElement(Page, { data, setData, role, toast }))), /* @__PURE__ */ React.createElement(Toast, { msg: toastMsg }), spLoading && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 24, left: 24, background: "#1a2f5e", color: "white", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 500, zIndex: 2e3, display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin 0.8s linear infinite" } }), "Chargement des donn\xE9es SharePoint..."), /* @__PURE__ */ React.createElement("style", null, `@keyframes spin{to{transform:rotate(360deg)}}`));
 }
 </script>
   <script>
