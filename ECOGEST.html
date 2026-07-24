@@ -35,7 +35,8 @@ const SP = {
     inscriptions: "Inscriptions",
     annonces: "Annonces",
     visiteurs: "Visiteurs",
-    filieres: "Filieres"
+    filieres: "Filieres",
+    paiements: "Paiements"
   }
 };
 const DEMO = {
@@ -80,6 +81,7 @@ const DEMO = {
     { id: 1, nom: "Rachidi", prenom: "Imane", cin: "BK123456", dateNaissance: "2005-03-14", lieuNaissance: "Rabat", telephone: "0612345678", email: "i.rachidi@gmail.com", adresse: "12 Rue des Fleurs", ville: "Rabat", quartier: "Agdal", bacAnnee: "2024", bacMention: "Bien", bacSerie: "Sciences \xC9conomiques", etablissement: "Lyc\xE9e Descartes", filiereS: "BAC+3 en Management et Gestion des entreprises", dateVisite: "2026-07-20", statut: "Visiteur", tarif: [{ tranche: "1\xE8re tranche", montant: 6e3, echeance: "2026-09-15", paye: false }, { tranche: "2\xE8me tranche", montant: 6e3, echeance: "2027-01-15", paye: false }, { tranche: "3\xE8me tranche", montant: 6e3, echeance: "2027-04-15", paye: false }], documents: [] },
     { id: 2, nom: "Benkirane", prenom: "Karim", cin: "BE234567", dateNaissance: "2004-07-22", lieuNaissance: "Sal\xE9", telephone: "0623456789", email: "k.benkirane@gmail.com", adresse: "5 Avenue Mohammed V", ville: "Sal\xE9", quartier: "Centre", bacAnnee: "2023", bacMention: "Passable", bacSerie: "Sciences de Gestion", etablissement: "Lyc\xE9e Ibn Khaldoun", filiereS: "BAC+3 en Syst\xE8mes d'Information \u2013 Option G\xE9nie Logiciel", dateVisite: "2026-07-21", statut: "Inscrit", tarif: [{ tranche: "1\xE8re tranche", montant: 6500, echeance: "2026-09-15", paye: true }, { tranche: "2\xE8me tranche", montant: 6500, echeance: "2027-01-15", paye: false }, { tranche: "3\xE8me tranche", montant: 6500, echeance: "2027-04-15", paye: false }], documents: [] }
   ],
+  paiements: null,
   filieres: [
     { id: 1, code: "SI-GL", intitule: "BAC+3 en Syst\xE8mes d'Information \u2013 Option G\xE9nie Logiciel", niveau: "BAC+3", duree: 3, capacite: 30, frais: 19500, statut: "Active", description: "Formation en d\xE9veloppement logiciel et g\xE9nie logiciel.", responsable: "", couleur: "#3b82f6" },
     { id: 2, code: "SI-RI", intitule: "BAC+3 en Syst\xE8mes d'Information \u2013 Option R\xE9seaux Informatiques", niveau: "BAC+3", duree: 3, capacite: 30, frais: 19500, statut: "Active", description: "Formation en r\xE9seaux et infrastructures informatiques.", responsable: "", couleur: "#06b6d4" },
@@ -628,14 +630,387 @@ function Visiteurs({ data, setData, role, toast }) {
     }
   ));
 }
+const PAIEMENT_ADMINS = ["k.bouabid@esrmi.ma", "a.bahalla@esrmi.ma", "fz.zniber@esrmi.ma"];
+const canAccessPaiement = (user) => user && PAIEMENT_ADMINS.includes(user.email);
+const DEMO_PAIEMENT = {
+  parametres: [
+    {
+      id: 1,
+      filiere: "BAC+3 en Management et Gestion des entreprises",
+      niveau: "BAC+3",
+      annee: "2026-2027",
+      fraisInscription: 2e3,
+      fraisScolarite: 18e3,
+      fraisAssurance: 300,
+      fraisDossier: 500,
+      fraisDiplomation: 1e3,
+      fraisRattrapage: 500,
+      fraisDivers: 200,
+      total: 22500
+    },
+    {
+      id: 2,
+      filiere: "BAC+3 en Syst\xE8mes d'Information \u2013 Option G\xE9nie Logiciel",
+      niveau: "BAC+3",
+      annee: "2026-2027",
+      fraisInscription: 2e3,
+      fraisScolarite: 19500,
+      fraisAssurance: 300,
+      fraisDossier: 500,
+      fraisDiplomation: 1e3,
+      fraisRattrapage: 500,
+      fraisDivers: 200,
+      total: 24e3
+    },
+    {
+      id: 3,
+      filiere: "BAC+5 en Cybers\xE9curit\xE9 des r\xE9seaux et des syst\xE8mes d'information",
+      niveau: "BAC+5",
+      annee: "2026-2027",
+      fraisInscription: 2500,
+      fraisScolarite: 25e3,
+      fraisAssurance: 400,
+      fraisDossier: 600,
+      fraisDiplomation: 1500,
+      fraisRattrapage: 600,
+      fraisDivers: 300,
+      total: 30900
+    }
+  ],
+  etudiants_paiement: [
+    {
+      id: 1,
+      etudiantId: 1,
+      nom: "Alami",
+      prenom: "Youssef",
+      numInscription: "INS2026001",
+      filiere: "BAC+3 en Management et Gestion des entreprises",
+      niveau: "BAC+3",
+      promotion: "2026-2027",
+      statut: "Inscrit",
+      cin: "BK123456",
+      telephone: "0612345678",
+      email: "y.alami@esr.ma",
+      responsableFinancier: "",
+      totalAPayer: 22500,
+      totalPaye: 9e3,
+      remises: [],
+      echeances: [
+        { id: 1, date: "2026-09-15", montant: 7500, statut: "Pay\xE9", type: "1\xE8re tranche" },
+        { id: 2, date: "2027-01-15", montant: 7500, statut: "Pay\xE9", type: "2\xE8me tranche" },
+        { id: 3, date: "2027-04-15", montant: 7500, statut: "Non pay\xE9", type: "3\xE8me tranche" }
+      ],
+      versements: [
+        { id: 1, date: "2026-09-10", montant: 7500, mode: "Virement", reference: "VIR001", banque: "CIH", numCheque: "", agent: "k.bouabid@esrmi.ma", recu: "REC-2026-001" },
+        { id: 2, date: "2027-01-12", montant: 7500, mode: "Ch\xE8que", reference: "CHQ002", banque: "Attijariwafa", numCheque: "123456", agent: "a.bahalla@esrmi.ma", recu: "REC-2027-001" }
+      ],
+      penalites: [],
+      historique: []
+    },
+    {
+      id: 2,
+      etudiantId: 2,
+      nom: "Benali",
+      prenom: "Sara",
+      numInscription: "INS2026002",
+      filiere: "BAC+3 en Syst\xE8mes d'Information \u2013 Option G\xE9nie Logiciel",
+      niveau: "BAC+3",
+      promotion: "2026-2027",
+      statut: "Inscrit",
+      cin: "BE234567",
+      telephone: "0623456789",
+      email: "s.benali@esr.ma",
+      responsableFinancier: "Hassan Benali (P\xE8re) - 0661234567",
+      totalAPayer: 24e3,
+      totalPaye: 0,
+      remises: [
+        { id: 1, type: "Bourse", pourcentage: 20, montant: 4800, motif: "Bourse d'excellence", valide: true }
+      ],
+      echeances: [
+        { id: 1, date: "2026-09-15", montant: 6400, statut: "En retard", type: "1\xE8re tranche" },
+        { id: 2, date: "2027-01-15", montant: 6400, statut: "Non pay\xE9", type: "2\xE8me tranche" },
+        { id: 3, date: "2027-04-15", montant: 6400, statut: "Non pay\xE9", type: "3\xE8me tranche" }
+      ],
+      versements: [],
+      penalites: [
+        { id: 1, date: "2026-10-01", montant: 375, motif: "Retard > 15 jours", applique: true }
+      ],
+      historique: []
+    }
+  ],
+  parametres_penalites: { actif: true, delaiJours: 15, typeCalcul: "pourcentage", valeur: 5 },
+  parametres_alertes: { email: true, sms: false, rappel1: 7, rappel2: 3, rappel3: 0 }
+};
+const formatMAD = (n) => `${(n || 0).toLocaleString("fr-MA")} MAD`;
+const today = () => (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+const isRetard = (dateEch) => new Date(dateEch) < /* @__PURE__ */ new Date();
+const genRecu = () => `REC-${(/* @__PURE__ */ new Date()).getFullYear()}-${String(Math.floor(Math.random() * 9e3) + 1e3)}`;
+const genNumInscription = () => `INS${(/* @__PURE__ */ new Date()).getFullYear()}${String(Math.floor(Math.random() * 900) + 100)}`;
+function SoldeBadge({ ep }) {
+  const restant = ep.totalAPayer - ep.totalPaye;
+  const taux = ep.totalAPayer > 0 ? Math.round(ep.totalPaye / ep.totalAPayer * 100) : 0;
+  const color = taux >= 100 ? C.green : taux >= 50 ? C.orange : C.red;
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { background: C.green + "18", color: C.green, border: `1px solid ${C.green}40`, borderRadius: 20, padding: "2px 8px", fontSize: 11, fontWeight: 600 } }, "Pay\xE9: ", formatMAD(ep.totalPaye)), /* @__PURE__ */ React.createElement("span", { style: { background: color + "18", color, border: `1px solid ${color}40`, borderRadius: 20, padding: "2px 8px", fontSize: 11, fontWeight: 600 } }, "Reste: ", formatMAD(restant)), /* @__PURE__ */ React.createElement("span", { style: { background: C.navy + "18", color: C.navy, border: `1px solid ${C.navy}40`, borderRadius: 20, padding: "2px 8px", fontSize: 11, fontWeight: 600 } }, taux, "%"));
+}
+function genererRecu(ep, versement) {
+  const html = `
+    <html><head><title>Re\xE7u ${versement.recu}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; }
+      .header { text-align: center; border-bottom: 2px solid #1a2f5e; padding-bottom: 20px; margin-bottom: 20px; }
+      .logo-text { font-size: 24px; font-weight: bold; color: #1a2f5e; }
+      .sub { font-size: 12px; color: #888; }
+      .recu-title { font-size: 20px; font-weight: bold; text-align: center; margin: 20px 0; color: #e56b2d; }
+      .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+      .label { color: #888; font-size: 13px; }
+      .value { font-weight: bold; font-size: 13px; color: #333; }
+      .montant { font-size: 24px; font-weight: bold; color: #1a2f5e; text-align: center; padding: 20px; background: #f5f5f3; border-radius: 8px; margin: 20px 0; }
+      .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #aaa; border-top: 1px solid #eee; padding-top: 15px; }
+      .signature { margin-top: 40px; display: flex; justify-content: space-between; }
+    </style></head><body>
+    <div class="header">
+      <div class="logo-text">\u{1F393} ECOGEST</div>
+      <div class="sub">\xC9cole Sup\xE9rieure de Rabat en Management et Ing\xE9nierie</div>
+      <div class="sub">ecolesuperieurederabat.sharepoint.com/sites/ECOGEST</div>
+    </div>
+    <div class="recu-title">RE\xC7U DE PAIEMENT \u2014 ${versement.recu}</div>
+    <div class="row"><span class="label">\xC9tudiant</span><span class="value">${ep.prenom} ${ep.nom}</span></div>
+    <div class="row"><span class="label">N\xB0 Inscription</span><span class="value">${ep.numInscription}</span></div>
+    <div class="row"><span class="label">Fili\xE8re</span><span class="value">${ep.filiere}</span></div>
+    <div class="row"><span class="label">Date de paiement</span><span class="value">${versement.date}</span></div>
+    <div class="row"><span class="label">Mode de paiement</span><span class="value">${versement.mode}</span></div>
+    ${versement.banque ? `<div class="row"><span class="label">Banque</span><span class="value">${versement.banque}</span></div>` : ""}
+    ${versement.numCheque ? `<div class="row"><span class="label">N\xB0 Ch\xE8que</span><span class="value">${versement.numCheque}</span></div>` : ""}
+    <div class="row"><span class="label">R\xE9f\xE9rence</span><span class="value">${versement.reference}</span></div>
+    <div class="row"><span class="label">Agent</span><span class="value">${versement.agent}</span></div>
+    <div class="montant">${formatMAD(versement.montant)}</div>
+    <div class="row"><span class="label">Total pay\xE9</span><span class="value">${formatMAD(ep.totalPaye)}</span></div>
+    <div class="row"><span class="label">Reste \xE0 payer</span><span class="value">${formatMAD(ep.totalAPayer - ep.totalPaye)}</span></div>
+    <div class="signature">
+      <div style="text-align:center"><div style="border-top:1px solid #333;width:150px;margin:40px 0 5px">Signature \xE9tudiant</div></div>
+      <div style="text-align:center"><div style="border-top:1px solid #333;width:150px;margin:40px 0 5px">Cachet & Signature</div></div>
+    </div>
+    <div class="footer">Document g\xE9n\xE9r\xE9 le ${(/* @__PURE__ */ new Date()).toLocaleString("fr-FR")} \u2014 ECOGEST \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()}</div>
+    </body></html>`;
+  const w = window.open("", "_blank");
+  w.document.write(html);
+  w.document.close();
+  w.print();
+}
+function FichePaiementEtudiant({ ep, onClose, onSave, user }) {
+  const [tab, setTab] = useState("solde");
+  const [showVersement, setShowVersement] = useState(false);
+  const [showRemise, setShowRemise] = useState(false);
+  const [showEcheancier, setShowEcheancier] = useState(false);
+  const [versForm, setVersForm] = useState({ date: today(), montant: "", mode: "Virement", reference: "", banque: "", numCheque: "", echeanceId: "" });
+  const [remiseForm, setRemiseForm] = useState({ type: "Bourse", pourcentage: "", montant: "", motif: "", valide: false });
+  const [echeancierType, setEcheancierType] = useState("trimestriel");
+  const restant = ep.totalAPayer - ep.totalPaye;
+  const taux = ep.totalAPayer > 0 ? Math.round(ep.totalPaye / ep.totalAPayer * 100) : 0;
+  const echeancesRetard = ep.echeances.filter((e) => e.statut === "En retard");
+  const totalRemises = ep.remises.filter((r) => r.valide).reduce((s, r) => s + r.montant, 0);
+  const handleVersement = () => {
+    const montant = parseFloat(versForm.montant);
+    if (!montant || montant <= 0) return;
+    const recu = genRecu();
+    const newVers = { ...versForm, id: Date.now(), montant, recu, agent: user?.email || "admin" };
+    const newEch = ep.echeances.map((e) => {
+      if (e.id === parseInt(versForm.echeanceId)) return { ...e, statut: "Pay\xE9" };
+      return e;
+    });
+    const newEp = {
+      ...ep,
+      totalPaye: ep.totalPaye + montant,
+      versements: [...ep.versements, newVers],
+      echeances: newEch,
+      historique: [...ep.historique, { date: today(), heure: (/* @__PURE__ */ new Date()).toLocaleTimeString(), action: "Versement", montant, agent: user?.email, detail: `${versForm.mode} - ${recu}` }]
+    };
+    onSave(newEp);
+    setTimeout(() => genererRecu(newEp, newVers), 200);
+    setShowVersement(false);
+    setVersForm({ date: today(), montant: "", mode: "Virement", reference: "", banque: "", numCheque: "", echeanceId: "" });
+  };
+  const handleRemise = () => {
+    const montant = remiseForm.montant ? parseFloat(remiseForm.montant) : Math.round(ep.totalAPayer * parseFloat(remiseForm.pourcentage) / 100);
+    const newRemise = { ...remiseForm, id: Date.now(), montant, pourcentage: parseFloat(remiseForm.pourcentage || 0) };
+    const newEp = {
+      ...ep,
+      remises: [...ep.remises, newRemise],
+      totalAPayer: ep.totalAPayer - montant,
+      historique: [...ep.historique, { date: today(), heure: (/* @__PURE__ */ new Date()).toLocaleTimeString(), action: "Remise", montant, agent: user?.email, detail: remiseForm.motif }]
+    };
+    onSave(newEp);
+    setShowRemise(false);
+  };
+  const genEcheancier = () => {
+    const total = ep.totalAPayer;
+    let echeances = [];
+    const base = /* @__PURE__ */ new Date("2026-09-15");
+    if (echeancierType === "annuel") {
+      echeances = [{ id: Date.now(), date: "2026-09-15", montant: total, statut: "Non pay\xE9", type: "Paiement annuel" }];
+    } else if (echeancierType === "semestriel") {
+      echeances = [
+        { id: Date.now(), date: "2026-09-15", montant: Math.round(total / 2), statut: "Non pay\xE9", type: "1er semestre" },
+        { id: Date.now() + 1, date: "2027-02-15", montant: total - Math.round(total / 2), statut: "Non pay\xE9", type: "2\xE8me semestre" }
+      ];
+    } else if (echeancierType === "trimestriel") {
+      echeances = [
+        { id: Date.now(), date: "2026-09-15", montant: Math.round(total / 3), statut: "Non pay\xE9", type: "1\xE8re tranche" },
+        { id: Date.now() + 1, date: "2027-01-15", montant: Math.round(total / 3), statut: "Non pay\xE9", type: "2\xE8me tranche" },
+        { id: Date.now() + 2, date: "2027-04-15", montant: total - 2 * Math.round(total / 3), statut: "Non pay\xE9", type: "3\xE8me tranche" }
+      ];
+    } else if (echeancierType === "mensuel") {
+      const mensuel = Math.round(total / 10);
+      echeances = Array.from({ length: 10 }, (_, i) => {
+        const d = /* @__PURE__ */ new Date("2026-09-15");
+        d.setMonth(d.getMonth() + i);
+        return { id: Date.now() + i, date: d.toISOString().split("T")[0], montant: i < 9 ? mensuel : total - 9 * mensuel, statut: "Non pay\xE9", type: `Mensualit\xE9 ${i + 1}/10` };
+      });
+    }
+    onSave({ ...ep, echeances });
+    setShowEcheancier(false);
+  };
+  const TABS = [["solde", "\u{1F4B0} Solde"], ["echeances", "\u{1F4C5} \xC9ch\xE9ancier"], ["versements", "\u{1F4B3} Versements"], ["remises", "\u{1F381} Remises"], ["penalites", "\u26A0\uFE0F P\xE9nalit\xE9s"], ["historique", "\u{1F4CB} Historique"]];
+  return /* @__PURE__ */ React.createElement(Modal, { title: `Paiement \u2014 ${ep.prenom} ${ep.nom} \xB7 ${ep.numInscription}`, onClose, width: 720 }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap", borderBottom: `1px solid ${C.border}`, paddingBottom: 8 } }, TABS.map(([k, l]) => /* @__PURE__ */ React.createElement("button", { key: k, onClick: () => setTab(k), style: {
+    padding: "6px 12px",
+    borderRadius: 8,
+    border: `1px solid ${tab === k ? C.navy : C.border}`,
+    background: tab === k ? C.navy : C.white,
+    color: tab === k ? C.white : "#555",
+    fontSize: 12,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontWeight: tab === k ? 600 : 400
+  } }, l))), tab === "solde" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 } }, [
+    ["Total \xE0 payer", ep.totalAPayer, C.navy],
+    ["Total pay\xE9", ep.totalPaye, C.green],
+    ["Reste \xE0 payer", restant, restant > 0 ? C.red : C.green],
+    ["Remises accord\xE9es", totalRemises, C.purple],
+    ["P\xE9nalit\xE9s", ep.penalites.filter((p) => p.applique).reduce((s, p) => s + p.montant, 0), C.orange],
+    ["Taux de paiement", null, C.navy]
+  ].map(([lbl, val, col], i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { background: col + "10", border: `1px solid ${col}30`, borderRadius: 10, padding: "12px 14px", borderTop: `3px solid ${col}` } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, marginBottom: 4 } }, lbl), i === 5 ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontWeight: 700, color: col } }, taux, "%"), /* @__PURE__ */ React.createElement("div", { style: { background: "#eee", borderRadius: 4, height: 6, marginTop: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${Math.min(taux, 100)}%`, height: "100%", background: taux >= 100 ? C.green : taux >= 50 ? C.orange : C.red, borderRadius: 4 } }))) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontWeight: 700, color: col } }, formatMAD(val))))), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 10, padding: 14, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.orange, textTransform: "uppercase", marginBottom: 8 } }, "Informations"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 12 } }, [["Fili\xE8re", ep.filiere], ["Promotion", ep.promotion], ["Statut", ep.statut], ["Responsable financier", ep.responsableFinancier || "\u2014"]].map(([l, v]) => /* @__PURE__ */ React.createElement("div", { key: l }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, l, ": "), /* @__PURE__ */ React.createElement("strong", null, v))))), echeancesRetard.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { color: C.red, fontWeight: 600, fontSize: 13 } }, "\u26A0\uFE0F ", echeancesRetard.length, " \xE9ch\xE9ance(s) en retard !"), echeancesRetard.map((e) => /* @__PURE__ */ React.createElement("div", { key: e.id, style: { fontSize: 12, color: "#666", marginTop: 4 } }, "\u2022 ", e.type, " \u2014 ", formatMAD(e.montant), " \u2014 \xC9chue le ", e.date))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { onClick: () => setShowVersement(true) }, "\u{1F4B3} Enregistrer un versement"), /* @__PURE__ */ React.createElement(Btn, { variant: "navy", onClick: () => setShowEcheancier(true) }, "\u{1F4C5} G\xE9n\xE9rer \xE9ch\xE9ancier"), /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowRemise(true) }, "\u{1F381} Accorder une remise"))), tab === "echeances" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, ep.echeances.length, " \xE9ch\xE9ance(s) configur\xE9e(s)"), /* @__PURE__ */ React.createElement(Btn, { small: true, onClick: () => setShowEcheancier(true) }, "\u{1F504} R\xE9g\xE9n\xE9rer")), ep.echeances.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, 'Aucun \xE9ch\xE9ancier. Cliquez sur "R\xE9g\xE9n\xE9rer" pour en cr\xE9er un.') : ep.echeances.map((e) => {
+    const retard = e.statut === "Non pay\xE9" && isRetard(e.date);
+    const statutAff = retard ? "En retard" : e.statut;
+    const col = statutAff === "Pay\xE9" ? C.green : statutAff === "En retard" ? C.red : statutAff === "Partiellement pay\xE9" ? C.orange : C.muted;
+    return /* @__PURE__ */ React.createElement("div", { key: e.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: retard ? "#fff5f5" : C.light, borderRadius: 8, marginBottom: 6, border: `1px solid ${retard ? "#fecaca" : C.border}` } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13 } }, e.type), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, "\xC9ch\xE9ance: ", e.date)), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: C.navy } }, formatMAD(e.montant)), /* @__PURE__ */ React.createElement(Badge, { color: col }, statutAff)));
+  })), tab === "versements" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, ep.versements.length, " versement(s)"), /* @__PURE__ */ React.createElement(Btn, { small: true, onClick: () => setShowVersement(true) }, "+ Versement")), ep.versements.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "Aucun versement enregistr\xE9") : ep.versements.map((v) => /* @__PURE__ */ React.createElement("div", { key: v.id, style: { background: C.light, borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14, color: C.navy } }, formatMAD(v.montant)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, v.date, " \xB7 ", v.mode, " \xB7 R\xE9f: ", v.reference), v.banque && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, "Banque: ", v.banque, " ", v.numCheque ? `\xB7 Ch\xE8que: ${v.numCheque}` : ""), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Agent: ", v.agent)), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement(Badge, { color: C.green }, v.recu), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6 } }, /* @__PURE__ */ React.createElement(Btn, { small: true, variant: "light", onClick: () => genererRecu(ep, v) }, "\u{1F5A8}\uFE0F Re\xE7u"))))))), tab === "remises" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, ep.remises.length, " remise(s) accord\xE9e(s)"), /* @__PURE__ */ React.createElement(Btn, { small: true, onClick: () => setShowRemise(true) }, "+ Remise")), ep.remises.map((r) => /* @__PURE__ */ React.createElement("div", { key: r.id, style: { background: r.valide ? "#f0fff4" : "#fff5f5", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: `1px solid ${r.valide ? "#9ae6b4" : "#fecaca"}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13, color: C.navy } }, r.type), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, r.motif), r.pourcentage > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, r.pourcentage, "% de r\xE9duction")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: r.valide ? C.green : C.orange } }, "-", formatMAD(r.montant)), /* @__PURE__ */ React.createElement(Badge, { color: r.valide ? C.green : C.orange }, r.valide ? "Valid\xE9e" : "En attente"))))), ep.remises.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "Aucune remise")), tab === "penalites" && /* @__PURE__ */ React.createElement("div", null, ep.penalites.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "\u2705 Aucune p\xE9nalit\xE9") : ep.penalites.map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, style: { background: "#fff5f5", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13, color: C.red } }, p.motif), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, "Appliqu\xE9e le ", p.date)), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 15, color: C.red } }, "+", formatMAD(p.montant)))))), tab === "historique" && /* @__PURE__ */ React.createElement("div", null, ep.historique.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 24, color: C.muted, fontSize: 13 } }, "Aucun historique") : [...ep.historique].reverse().map((h, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", gap: 12, padding: "8px 0", borderBottom: `1px solid ${C.light}` } }, /* @__PURE__ */ React.createElement("div", { style: { width: 36, height: 36, borderRadius: 8, background: C.light, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 } }, h.action === "Versement" ? "\u{1F4B3}" : h.action === "Remise" ? "\u{1F381}" : "\u{1F4DD}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13 } }, h.action), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, h.date, " ", h.heure, " \xB7 ", h.agent), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#555" } }, h.detail)), h.montant && /* @__PURE__ */ React.createElement("div", { style: { marginLeft: "auto", fontWeight: 700, color: C.navy, fontSize: 14 } }, formatMAD(h.montant))))), showVersement && /* @__PURE__ */ React.createElement(Modal, { title: "Enregistrer un versement", onClose: () => setShowVersement(false), width: 480 }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "Date *", type: "date", value: versForm.date, onChange: (e) => setVersForm((f) => ({ ...f, date: e.target.value })) }), /* @__PURE__ */ React.createElement(Input, { label: "Montant (MAD) *", type: "number", value: versForm.montant, onChange: (e) => setVersForm((f) => ({ ...f, montant: e.target.value })), placeholder: "0.00" })), /* @__PURE__ */ React.createElement(Sel, { label: "Mode de paiement *", value: versForm.mode, onChange: (e) => setVersForm((f) => ({ ...f, mode: e.target.value })) }, ["Esp\xE8ces", "Ch\xE8que", "Virement", "Carte bancaire", "Paiement en ligne"].map((m) => /* @__PURE__ */ React.createElement("option", { key: m }, m))), /* @__PURE__ */ React.createElement(Sel, { label: "\xC9ch\xE9ance concern\xE9e", value: versForm.echeanceId, onChange: (e) => setVersForm((f) => ({ ...f, echeanceId: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner une \xE9ch\xE9ance --"), ep.echeances.filter((e) => e.statut !== "Pay\xE9").map((e) => /* @__PURE__ */ React.createElement("option", { key: e.id, value: e.id }, e.type, " \u2014 ", formatMAD(e.montant)))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "R\xE9f\xE9rence", value: versForm.reference, onChange: (e) => setVersForm((f) => ({ ...f, reference: e.target.value })), placeholder: "VIR001..." }), /* @__PURE__ */ React.createElement(Input, { label: "Banque", value: versForm.banque, onChange: (e) => setVersForm((f) => ({ ...f, banque: e.target.value })), placeholder: "Attijariwafa..." })), versForm.mode === "Ch\xE8que" && /* @__PURE__ */ React.createElement(Input, { label: "N\xB0 Ch\xE8que", value: versForm.numCheque, onChange: (e) => setVersForm((f) => ({ ...f, numCheque: e.target.value })) }), /* @__PURE__ */ React.createElement("div", { style: { background: "#f0fff4", border: "1px solid #9ae6b4", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: C.green, marginBottom: 12 } }, "\u2705 Un re\xE7u sera g\xE9n\xE9r\xE9 automatiquement apr\xE8s enregistrement"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowVersement(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleVersement, disabled: !versForm.montant }, "\u{1F4B3} Enregistrer & G\xE9n\xE9rer re\xE7u"))), showRemise && /* @__PURE__ */ React.createElement(Modal, { title: "Accorder une remise", onClose: () => setShowRemise(false), width: 440 }, /* @__PURE__ */ React.createElement(Sel, { label: "Type de remise *", value: remiseForm.type, onChange: (e) => setRemiseForm((f) => ({ ...f, type: e.target.value })) }, ["Bourse", "R\xE9duction familiale", "R\xE9duction exceptionnelle", "Remise partenaire", "Remise personnel"].map((t) => /* @__PURE__ */ React.createElement("option", { key: t }, t))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "Pourcentage (%)", type: "number", min: "0", max: "100", value: remiseForm.pourcentage, onChange: (e) => setRemiseForm((f) => ({ ...f, pourcentage: e.target.value })) }), /* @__PURE__ */ React.createElement(Input, { label: "Montant fixe (MAD)", type: "number", value: remiseForm.montant, onChange: (e) => setRemiseForm((f) => ({ ...f, montant: e.target.value })) })), /* @__PURE__ */ React.createElement(Input, { label: "Motif *", value: remiseForm.motif, onChange: (e) => setRemiseForm((f) => ({ ...f, motif: e.target.value })) }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: remiseForm.valide, onChange: (e) => setRemiseForm((f) => ({ ...f, valide: e.target.checked })), id: "valide" }), /* @__PURE__ */ React.createElement("label", { htmlFor: "valide", style: { fontSize: 13, color: "#555" } }, "Valid\xE9 par la direction")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowRemise(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleRemise, disabled: !remiseForm.motif }, "\u{1F381} Appliquer la remise"))), showEcheancier && /* @__PURE__ */ React.createElement(Modal, { title: "G\xE9n\xE9rer un \xE9ch\xE9ancier", onClose: () => setShowEcheancier(false), width: 400 }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.muted, marginBottom: 14 } }, "Total \xE0 payer: ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.navy } }, formatMAD(ep.totalAPayer))), /* @__PURE__ */ React.createElement(Sel, { label: "Type d'\xE9ch\xE9ancier", value: echeancierType, onChange: (e) => setEcheancierType(e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "annuel" }, "Paiement annuel (1 versement)"), /* @__PURE__ */ React.createElement("option", { value: "semestriel" }, "Semestriel (2 versements)"), /* @__PURE__ */ React.createElement("option", { value: "trimestriel" }, "Trimestriel (3 versements)"), /* @__PURE__ */ React.createElement("option", { value: "mensuel" }, "Mensuel (10 mensualit\xE9s)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowEcheancier(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: genEcheancier }, "\u{1F4C5} G\xE9n\xE9rer l'\xE9ch\xE9ancier"))));
+}
+function Paiements({ data, setData, role, user, toast }) {
+  const [tab, setTab] = useState("dashboard");
+  const [search, setSearch] = useState("");
+  const [showFiche, setShowFiche] = useState(null);
+  const [filterStatut, setFilterStatut] = useState("");
+  const pData = data.paiements || DEMO_PAIEMENT;
+  const savePData = (newPData) => {
+    setData((d) => ({ ...d, paiements: newPData }));
+    toast("Donn\xE9es enregistr\xE9es dans SharePoint \u2713");
+  };
+  const updateEtudiantPaiement = (newEp) => {
+    const newEps = pData.etudiants_paiement.map((e) => e.id === newEp.id ? newEp : e);
+    savePData({ ...pData, etudiants_paiement: newEps });
+    if (showFiche?.id === newEp.id) setShowFiche(newEp);
+  };
+  const eps = pData.etudiants_paiement;
+  const totalEncaisseJour = eps.reduce((s, e) => s + e.versements.filter((v) => v.date === today()).reduce((a, v) => a + v.montant, 0), 0);
+  const totalEncaisseMois = eps.reduce((s, e) => s + e.versements.filter((v) => v.date?.startsWith((/* @__PURE__ */ new Date()).toISOString().slice(0, 7))).reduce((a, v) => a + v.montant, 0), 0);
+  const totalRestant = eps.reduce((s, e) => s + (e.totalAPayer - e.totalPaye), 0);
+  const nbImpaye = eps.filter((e) => e.echeances.some((ec) => ec.statut === "En retard" || isRetard(ec.date) && ec.statut === "Non pay\xE9")).length;
+  const totalAPayer = eps.reduce((s, e) => s + e.totalAPayer, 0);
+  const totalPaye = eps.reduce((s, e) => s + e.totalPaye, 0);
+  const tauxRecouvrement = totalAPayer > 0 ? Math.round(totalPaye / totalAPayer * 100) : 0;
+  const filtered = eps.filter((e) => {
+    const q = search.toLowerCase();
+    const match = !q || `${e.nom} ${e.prenom} ${e.cin || ""} ${e.numInscription} ${e.telephone || ""}`.toLowerCase().includes(q);
+    const statMatch = !filterStatut || (filterStatut === "retard" ? e.echeances.some((ec) => ec.statut === "En retard" || isRetard(ec.date) && ec.statut === "Non pay\xE9") : filterStatut === "jourpaye" ? e.versements.some((v) => v.date === today()) : true);
+    return match && statMatch;
+  });
+  const TABS = [["dashboard", "\u{1F4CA} Tableau de bord"], ["liste", "\u{1F465} \xC9tudiants"], ["parametres", "\u2699\uFE0F Param\xE9trage"], ["etats", "\u{1F4C8} \xC9tats financiers"]];
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(PageHeader, { title: "\u{1F4B0} Gestion des Paiements", sub: "Module financier \u2014 Acc\xE8s restreint \xB7 donn\xE9es SharePoint ECOGEST" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 20, borderBottom: `1px solid ${C.border}`, paddingBottom: 10 } }, TABS.map(([k, l]) => /* @__PURE__ */ React.createElement("button", { key: k, onClick: () => setTab(k), style: {
+    padding: "8px 16px",
+    borderRadius: 8,
+    border: `1px solid ${tab === k ? C.navy : C.border}`,
+    background: tab === k ? C.navy : C.white,
+    color: tab === k ? C.white : "#555",
+    fontSize: 13,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontWeight: tab === k ? 600 : 400
+  } }, l))), tab === "dashboard" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 } }, /* @__PURE__ */ React.createElement(StatCard, { label: "Encaissement du jour", value: formatMAD(totalEncaisseJour), color: C.green, icon: "\u{1F4B5}" }), /* @__PURE__ */ React.createElement(StatCard, { label: "Encaissement du mois", value: formatMAD(totalEncaisseMois), color: C.navy, icon: "\u{1F4C5}" }), /* @__PURE__ */ React.createElement(StatCard, { label: "Montant restant", value: formatMAD(totalRestant), color: C.orange, icon: "\u23F3" }), /* @__PURE__ */ React.createElement(StatCard, { label: "\xC9tudiants en retard", value: nbImpaye, color: C.red, icon: "\u26A0\uFE0F" }), /* @__PURE__ */ React.createElement(StatCard, { label: "Taux de recouvrement", value: `${tauxRecouvrement}%`, color: C.purple, icon: "\u{1F4C8}" })), /* @__PURE__ */ React.createElement(Card, { style: { padding: 20, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 600, color: C.navy } }, "Recouvrement global"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.navy } }, formatMAD(totalPaye), " / ", formatMAD(totalAPayer))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eee", borderRadius: 8, height: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${Math.min(tauxRecouvrement, 100)}%`, height: "100%", background: `linear-gradient(90deg, ${C.green}, ${C.navy})`, borderRadius: 8, transition: "width 0.5s" } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: C.muted } }, /* @__PURE__ */ React.createElement("span", null, tauxRecouvrement, "% encaiss\xE9"), /* @__PURE__ */ React.createElement("span", null, "Reste: ", formatMAD(totalRestant)))), nbImpaye > 0 && /* @__PURE__ */ React.createElement(Card, { style: { padding: 20 } }, /* @__PURE__ */ React.createElement("h4", { style: { color: C.red, margin: "0 0 12px", fontSize: 14 } }, "\u26A0\uFE0F \xC9tudiants avec \xE9ch\xE9ances en retard"), eps.filter((e) => e.echeances.some((ec) => ec.statut === "En retard" || isRetard(ec.date) && ec.statut === "Non pay\xE9")).map((e) => /* @__PURE__ */ React.createElement("div", { key: e.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.light}` } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13 } }, e.prenom, " ", e.nom), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, e.filiere.slice(0, 40), "...")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement(SoldeBadge, { ep: e }), /* @__PURE__ */ React.createElement(Btn, { small: true, variant: "primary", onClick: () => setShowFiche(e), style: { marginTop: 4 } }, "Voir fiche")))))), tab === "liste" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      placeholder: "\u{1F50D} Nom, CIN, N\xB0 inscription, t\xE9l\xE9phone...",
+      value: search,
+      onChange: (e) => setSearch(e.target.value),
+      style: { flex: 1, minWidth: 200, padding: "9px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit" }
+    }
+  ), [["", "Tous"], ["retard", "En retard"], ["jourpaye", "Pay\xE9 aujourd'hui"]].map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => setFilterStatut(v), style: {
+    padding: "8px 14px",
+    borderRadius: 20,
+    border: `1px solid ${C.border}`,
+    background: filterStatut === v ? C.navy : C.white,
+    color: filterStatut === v ? C.white : "#555",
+    fontSize: 12,
+    cursor: "pointer",
+    fontFamily: "inherit"
+  } }, l))), /* @__PURE__ */ React.createElement(Card, { style: { overflow: "hidden" } }, /* @__PURE__ */ React.createElement(
+    DataTable,
+    {
+      cols: [
+        { key: "numInscription", label: "N\xB0 Inscription" },
+        { key: "prenom", label: "Pr\xE9nom" },
+        { key: "nom", label: "Nom" },
+        { key: "filiere", label: "Fili\xE8re", render: (v) => /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11 } }, v.slice(0, 30), "...") },
+        { key: "promotion", label: "Promotion" },
+        { key: "statut", label: "Statut", render: (v) => /* @__PURE__ */ React.createElement(Badge, { color: v === "Inscrit" ? C.green : v === "Suspendu" ? C.red : C.orange }, v) },
+        { key: "id", label: "Solde", render: (_, row) => /* @__PURE__ */ React.createElement(SoldeBadge, { ep: row }) },
+        { key: "id", label: "", render: (_, row) => /* @__PURE__ */ React.createElement(Btn, { small: true, variant: "navy", onClick: () => setShowFiche(row) }, "\u{1F4B0} Paiement") }
+      ],
+      rows: filtered,
+      emptyMsg: "Aucun \xE9tudiant trouv\xE9"
+    }
+  ))), tab === "parametres" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { style: { color: C.navy, marginBottom: 12 } }, "Frais par fili\xE8re"), pData.parametres.map((p) => /* @__PURE__ */ React.createElement(Card, { key: p.id, style: { padding: 16, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 13, color: C.navy, marginBottom: 8 } }, p.filiere.slice(0, 35), "..."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 10 } }, "Ann\xE9e ", p.annee), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, fontSize: 12 } }, [["Inscription", p.fraisInscription], ["Scolarit\xE9", p.fraisScolarite], ["Assurance", p.fraisAssurance], ["Dossier", p.fraisDossier], ["Diplomation", p.fraisDiplomation], ["Rattrapage", p.fraisRattrapage]].map(([l, v]) => /* @__PURE__ */ React.createElement("div", { key: l, style: { display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: `1px solid ${C.light}` } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, l), /* @__PURE__ */ React.createElement("strong", null, formatMAD(v))))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, padding: "8px", background: C.navy + "10", borderRadius: 6, textAlign: "center", fontWeight: 700, color: C.navy } }, "Total: ", formatMAD(p.total))))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { style: { color: C.navy, marginBottom: 12 } }, "Param\xE8tres p\xE9nalit\xE9s"), /* @__PURE__ */ React.createElement(Card, { style: { padding: 16, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: pData.parametres_penalites.actif, readOnly: true }), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 13 } }, "P\xE9nalit\xE9s de retard activ\xE9es")), [["D\xE9lai avant p\xE9nalit\xE9", `${pData.parametres_penalites.delaiJours} jours`], ["Type", pData.parametres_penalites.typeCalcul], ["Valeur", `${pData.parametres_penalites.valeur}%`]].map(([l, v]) => /* @__PURE__ */ React.createElement("div", { key: l, style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.light}`, fontSize: 13 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, l), /* @__PURE__ */ React.createElement("strong", null, v)))), /* @__PURE__ */ React.createElement("h4", { style: { color: C.navy, marginBottom: 12 } }, "Param\xE8tres alertes"), /* @__PURE__ */ React.createElement(Card, { style: { padding: 16 } }, [["Email activ\xE9", pData.parametres_alertes.email ? "\u2705 Oui" : "\u274C Non"], ["SMS activ\xE9", pData.parametres_alertes.sms ? "\u2705 Oui" : "\u274C Non"], [`Rappel 1`, `${pData.parametres_alertes.rappel1} jours avant`], [`Rappel 2`, `${pData.parametres_alertes.rappel2} jours avant`], ["Rappel 3", "Le jour J"]].map(([l, v]) => /* @__PURE__ */ React.createElement("div", { key: l, style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.light}`, fontSize: 13 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, l), /* @__PURE__ */ React.createElement("strong", null, v))))))), tab === "etats" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 } }, /* @__PURE__ */ React.createElement(Card, { style: { padding: 20 } }, /* @__PURE__ */ React.createElement("h4", { style: { color: C.navy, marginBottom: 12 } }, "\u{1F4CA} Par fili\xE8re"), [...new Set(eps.map((e) => e.filiere))].map((f) => {
+    const fEps = eps.filter((e) => e.filiere === f);
+    const fPaye = fEps.reduce((s, e) => s + e.totalPaye, 0);
+    const fTotal = fEps.reduce((s, e) => s + e.totalAPayer, 0);
+    return /* @__PURE__ */ React.createElement("div", { key: f, style: { marginBottom: 10, padding: "8px 0", borderBottom: `1px solid ${C.light}` } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: C.navy, marginBottom: 4 } }, f.slice(0, 35), "..."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted } }, fEps.length, " \xE9tudiants"), /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 600 } }, formatMAD(fPaye), " / ", formatMAD(fTotal))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eee", borderRadius: 4, height: 4, marginTop: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${fTotal > 0 ? Math.min(Math.round(fPaye / fTotal * 100), 100) : 0}%`, height: "100%", background: C.green, borderRadius: 4 } })));
+  })), /* @__PURE__ */ React.createElement(Card, { style: { padding: 20 } }, /* @__PURE__ */ React.createElement("h4", { style: { color: C.navy, marginBottom: 12 } }, "\u{1F4B3} Par mode de paiement"), ["Esp\xE8ces", "Ch\xE8que", "Virement", "Carte bancaire", "Paiement en ligne"].map((mode) => {
+    const total = eps.reduce((s, e) => s + e.versements.filter((v) => v.mode === mode).reduce((a, v) => a + v.montant, 0), 0);
+    const count = eps.reduce((s, e) => s + e.versements.filter((v) => v.mode === mode).length, 0);
+    if (!count) return null;
+    return /* @__PURE__ */ React.createElement("div", { key: mode, style: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.light}`, fontSize: 13 } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#555" } }, mode, " (", count, " op\xE9ration", count > 1 ? "s" : "", ")"), /* @__PURE__ */ React.createElement("strong", { style: { color: C.navy } }, formatMAD(total)));
+  }), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, padding: "10px", background: C.navy + "10", borderRadius: 8, textAlign: "center", fontWeight: 700, color: C.navy, fontSize: 14 } }, "Total encaiss\xE9: ", formatMAD(totalPaye)))), /* @__PURE__ */ React.createElement(Card, { style: { padding: 20, marginTop: 16 } }, /* @__PURE__ */ React.createElement("h4", { style: { color: C.red, marginBottom: 12 } }, "\u{1F4CB} \xC9tat des impay\xE9s"), /* @__PURE__ */ React.createElement(
+    DataTable,
+    {
+      cols: [
+        { key: "prenom", label: "Pr\xE9nom" },
+        { key: "nom", label: "Nom" },
+        { key: "filiere", label: "Fili\xE8re", render: (v) => /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11 } }, v.slice(0, 25), "...") },
+        { key: "totalAPayer", label: "Total \xE0 payer", render: (v) => /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 600 } }, formatMAD(v)) },
+        { key: "totalPaye", label: "Pay\xE9", render: (v) => /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 600 } }, formatMAD(v)) },
+        { key: "id", label: "Reste", render: (_, r) => /* @__PURE__ */ React.createElement("span", { style: { color: C.red, fontWeight: 600 } }, formatMAD(r.totalAPayer - r.totalPaye)) }
+      ],
+      rows: eps.filter((e) => e.totalPaye < e.totalAPayer),
+      emptyMsg: "\u2705 Aucun impay\xE9 !"
+    }
+  ))), showFiche && /* @__PURE__ */ React.createElement(
+    FichePaiementEtudiant,
+    {
+      ep: showFiche,
+      onClose: () => setShowFiche(null),
+      onSave: updateEtudiantPaiement,
+      user
+    }
+  ));
+}
 const NAV_BY_ROLE = {
-  directrice: ["dashboard", "filieres", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces"],
-  administrateur: ["dashboard", "filieres", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces", "config"],
+  directrice: ["dashboard", "paiements", "filieres", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces"],
+  administrateur: ["dashboard", "paiements", "filieres", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces", "config"],
   professeur: ["notes", "presences", "cours", "annonces"],
   etudiant: ["filieres", "notes", "presences", "annonces"]
 };
 const NAV_ITEMS = {
   dashboard: { label: "Tableau de bord", icon: "\u{1F3E0}" },
+  paiements: { label: "Paiements", icon: "\u{1F4B0}" },
   filieres: { label: "Fili\xE8res", icon: "\u{1F3AF}" },
   visiteurs: { label: "Visiteurs", icon: "\u{1F465}" },
   etudiants: { label: "\xC9tudiants", icon: "\u{1F393}" },
@@ -799,7 +1174,7 @@ Contactez l'administrateur : i.elmzioui@esrmi.ma`);
   if (checking) return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", background: `linear-gradient(135deg, ${C.navy} 0%, #2d4a8a 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Segoe UI', system-ui, sans-serif" } }, /* @__PURE__ */ React.createElement("div", { style: { color: "white", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 16 } }, "\u23F3"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 16, fontWeight: 600 } }, "V\xE9rification de votre compte Microsoft...")));
   if (!role) return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   const navItems = NAV_BY_ROLE[role];
-  const PAGES = { dashboard: Dashboard, filieres: Filieres, visiteurs: Visiteurs, etudiants: Etudiants, professeurs: Professeurs, notes: Notes, presences: Presences, cours: Cours, annonces: Annonces, config: Configuration };
+  const PAGES = { dashboard: Dashboard, paiements: Paiements, filieres: Filieres, visiteurs: Visiteurs, etudiants: Etudiants, professeurs: Professeurs, notes: Notes, presences: Presences, cours: Cours, annonces: Annonces, config: Configuration };
   const Page = PAGES[active];
   const roleInfo = ROLES[role];
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", height: "100vh", fontFamily: "'Segoe UI', system-ui, sans-serif", background: C.light, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 230, background: C.navy, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 } }, "\xC9cole Sup\xE9rieure de Rabat"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 19, fontWeight: 700, color: C.white } }, "ECO", /* @__PURE__ */ React.createElement("span", { style: { color: C.orange } }, "GEST")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, "ECOGEST \xB7 SharePoint 365")), /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 10px 4px" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 32, height: 32, borderRadius: "50%", background: roleInfo.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 } }, roleInfo.icon), /* @__PURE__ */ React.createElement("div", { style: { overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: C.white, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, user?.nom || roleInfo.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: roleInfo.color } }, roleInfo.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, user?.email || "")))), /* @__PURE__ */ React.createElement("nav", { style: { flex: 1, padding: "8px 0" } }, navItems.map((key) => {
@@ -827,7 +1202,7 @@ Contactez l'administrateur : i.elmzioui@esrmi.ma`);
 </script>
   <script>
     try{ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));}
-    catch(e){document.getElementById('root').innerHTML='<div style="color:red;padding:20px;background:white;font-family:monospace;">'+e.message+'</div>';}
+    catch(e){document.getElementById('root').innerHTML='<div style="color:red;padding:20px;background:white;font-family:monospace;white-space:pre-wrap;">'+e.message+'<br><br>'+(e.stack||'')+'</div>';}
   </script>
 </body>
 </html>
