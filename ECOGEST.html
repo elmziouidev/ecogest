@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ECOGEST — École Supérieure de Rabat</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    #root { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+
+
+// ════════════════════════════════════════════════════════════════════
+//  SHAREPOINT CONFIG — remplacez par vos vraies valeurs Azure AD
+// ════════════════════════════════════════════════════════════════════
+const SP = {
+  siteUrl: "https://ecolesuperieurederabat.sharepoint.com/sites/ECOGEST",
+  tenantId: "VOTRE_TENANT_ID",
+  clientId: "VOTRE_CLIENT_ID",
+  // En production : authentification via MSAL (Microsoft Auth Library)
+  // Les listes à créer dans SharePoint :
+  lists: {
+    etudiants:   "Etudiants",
+    professeurs: "Professeurs",
+    notes:       "Notes",
+    presences:   "Presences",
+    cours:       "Cours",
+    inscriptions:"Inscriptions",
+    annonces:    "Annonces",
+  },
+};
+
+// ════════════════════════════════════════════════════════════════════
+//  SHAREPOINT GRAPH API  (décommentez en production)
+// ════════════════════════════════════════════════════════════════════
+/*
+import * as msal from "@azure/msal-browser";
+
+const msalConfig = {
+  auth: {
+    clientId: SP.clientId,
+    authority: `https://login.microsoftonline.com/${SP.tenantId}`,
+    redirectUri: window.location.origin,
+  },
+};
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+const scopes = ["https://graph.microsoft.com/Sites.ReadWrite.All"];
+
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = { scopes, account: accounts[0] };
+  const resp = await msalInstance.acquireTokenSilent(request)
+    .catch(() => msalInstance.acquireTokenPopup(request));
+  return resp.accessToken;
+}
+
+async function spGet(list) {
+  const token = await getToken();
+  const siteId = await getSiteId(token);
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items?expand=fields&$top=500`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  return data.value.map(i => ({ id: i.id, ...i.fields }));
+}
+
+async function spAdd(list, fields) {
+  const token = await getToken();
+  const siteId = await getSiteId(token);
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ fields }),
+    }
+  );
+  return await res.json();
+}
+
+async function spUpdate(list, itemId, fields) {
+  const token = await getToken();
+  const siteId = await getSiteId(token);
+  await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items/${itemId}/fields`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    }
+  );
+}
+
+async function spDelete(list, itemId) {
+  const token = await getToken();
+  const siteId = await getSiteId(token);
+  await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items/${itemId}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+  );
+}
+
+async function getSiteId(token) {
+  const host = "ecolesuperieurederabat.sharepoint.com";
+  const path = "/sites/ECOGEST";
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${host}:${path}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  return data.id;
+}
+*/
+
+// ════════════════════════════════════════════════════════════════════
+//  DONNÉES DE DÉMONSTRATION (remplacées par SharePoint en prod)
+// ════════════════════════════════════════════════════════════════════
+const DEMO = {
+  etudiants: [
+    { id:1, nom:"Alami",   prenom:"Youssef", cne:"P123456", filiere:"MGE", annee:"2ème", email:"y.alami@esr.ma",   statut:"Actif",   genre:"M" },
+    { id:2, nom:"Benali",  prenom:"Sara",    cne:"P234567", filiere:"MGE", annee:"1ère", email:"s.benali@esr.ma",  statut:"Actif",   genre:"F" },
+    { id:3, nom:"Chraibi", prenom:"Mehdi",   cne:"P345678", filiere:"MGE", annee:"3ème", email:"m.chraibi@esr.ma", statut:"Actif",   genre:"M" },
+    { id:4, nom:"Daoudi",  prenom:"Fatima",  cne:"P456789", filiere:"MGE", annee:"2ème", email:"f.daoudi@esr.ma",  statut:"Inactif", genre:"F" },
+    { id:5, nom:"El Idrissi", prenom:"Amine", cne:"P567890", filiere:"MGE", annee:"1ère", email:"a.elidrissi@esr.ma", statut:"Actif", genre:"M" },
+  ],
+  professeurs: [
+    { id:1, nom:"El Fassi", prenom:"Hassan", cin:"BE123456", matiere:"Finance & Comptabilité", email:"h.elfassi@esr.ma",  statut:"Actif", type:"Permanent" },
+    { id:2, nom:"Tahiri",   prenom:"Leila",  cin:"BK234567", matiere:"Marketing",              email:"l.tahiri@esr.ma",   statut:"Actif", type:"Vacataire" },
+    { id:3, nom:"Mourad",   prenom:"Karim",  cin:"BB345678", matiere:"Droit des affaires",     email:"k.mourad@esr.ma",   statut:"Actif", type:"Permanent" },
+    { id:4, nom:"Soussi",   prenom:"Nadia",  cin:"BA456789", matiere:"Management stratégique", email:"n.soussi@esr.ma",   statut:"Actif", type:"Permanent" },
+  ],
+  notes: [
+    { id:1, etudiantId:1, etudiant:"Youssef Alami",  module:"Finance",    note:16.5, semestre:"S3", coef:3, date:"2026-06-15" },
+    { id:2, etudiantId:2, etudiant:"Sara Benali",     module:"Marketing",  note:14,   semestre:"S1", coef:2, date:"2026-06-15" },
+    { id:3, etudiantId:3, etudiant:"Mehdi Chraibi",   module:"Droit",      note:17,   semestre:"S5", coef:2, date:"2026-06-16" },
+    { id:4, etudiantId:4, etudiant:"Fatima Daoudi",   module:"Finance",    note:12,   semestre:"S3", coef:3, date:"2026-06-16" },
+    { id:5, etudiantId:5, etudiant:"Amine El Idrissi",module:"Marketing",  note:15,   semestre:"S1", coef:2, date:"2026-06-17" },
+  ],
+  presences: [
+    { id:1, etudiant:"Youssef Alami",   module:"Finance",    date:"2026-07-20", heure:"08h00", statut:"Présent" },
+    { id:2, etudiant:"Sara Benali",     module:"Marketing",  date:"2026-07-20", heure:"10h00", statut:"Absent"  },
+    { id:3, etudiant:"Mehdi Chraibi",   module:"Droit",      date:"2026-07-21", heure:"08h00", statut:"Présent" },
+    { id:4, etudiant:"Fatima Daoudi",   module:"Finance",    date:"2026-07-21", heure:"08h00", statut:"Justifié"},
+    { id:5, etudiant:"Amine El Idrissi",module:"Marketing",  date:"2026-07-21", heure:"10h00", statut:"Présent" },
+  ],
+  cours: [
+    { id:1, intitule:"Finance d'entreprise",    professeur:"Hassan El Fassi", filiere:"MGE", semestre:"S3", heures:40, salle:"A101" },
+    { id:2, intitule:"Marketing opérationnel",  professeur:"Leila Tahiri",    filiere:"MGE", semestre:"S3", heures:30, salle:"B202" },
+    { id:3, intitule:"Droit des sociétés",      professeur:"Karim Mourad",    filiere:"MGE", semestre:"S3", heures:30, salle:"A102" },
+    { id:4, intitule:"Management stratégique",  professeur:"Nadia Soussi",    filiere:"MGE", semestre:"S5", heures:40, salle:"C301" },
+  ],
+  annonces: [
+    { id:1, titre:"Rentrée 2026-2027", contenu:"La rentrée est fixée au 15 septembre 2026.", auteur:"Direction", date:"2026-07-01", cible:"Tous" },
+    { id:2, titre:"Dépôt des PFA",     contenu:"Les projets de fin d'année doivent être déposés avant le 30 juin.", auteur:"Scolarité", date:"2026-06-01", cible:"Étudiants" },
+  ],
+};
+
+// ════════════════════════════════════════════════════════════════════
+//  DESIGN TOKENS
+// ════════════════════════════════════════════════════════════════════
+const C = {
+  navy:    "#1a2f5e",
+  orange:  "#e56b2d",
+  green:   "#2e7d52",
+  red:     "#c0392b",
+  purple:  "#7c3aed",
+  light:   "#f5f5f3",
+  border:  "#e5e5e3",
+  muted:   "#888780",
+  white:   "#ffffff",
+  navyLight: "#e8edf5",
+};
+
+// ════════════════════════════════════════════════════════════════════
+//  RÔLES
+// ════════════════════════════════════════════════════════════════════
+const ROLES = {
+  directrice:     { label: "Directrice",     color: C.purple, icon: "👩‍💼" },
+  administrateur: { label: "Administrateur", color: C.navy,   icon: "⚙️"  },
+  professeur:     { label: "Professeur",     color: C.green,  icon: "👨‍🏫" },
+  etudiant:       { label: "Étudiant",       color: C.orange, icon: "🎓"  },
+};
+
+// ════════════════════════════════════════════════════════════════════
+//  UTILITAIRES UI
+// ════════════════════════════════════════════════════════════════════
+const mention = (n) => n >= 16 ? ["Très bien", C.green] : n >= 14 ? ["Bien", C.navy] : n >= 10 ? ["Passable", C.orange] : ["Insuffisant", C.red];
+
+const Badge = ({ children, color = C.orange, size = 12 }) => (
+  <span style={{ background: color + "18", color, border: `1px solid ${color}40`, borderRadius: 20, padding: "2px 9px", fontSize: size, fontWeight: 500, whiteSpace: "nowrap" }}>{children}</span>
+);
+
+const Btn = ({ children, onClick, variant = "primary", small, disabled, style = {} }) => (
+  <button onClick={onClick} disabled={disabled} style={{
+    padding: small ? "6px 14px" : "9px 18px", borderRadius: 8, border: "none",
+    cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 13,
+    fontWeight: 600, fontFamily: "inherit", opacity: disabled ? 0.5 : 1,
+    background: variant === "primary" ? C.orange : variant === "navy" ? C.navy : variant === "danger" ? C.red : C.light,
+    color: ["primary","navy","danger"].includes(variant) ? C.white : "#333",
+    transition: "opacity 0.15s", ...style,
+  }}>{children}</button>
+);
+
+const Input = ({ label, ...p }) => (
+  <div style={{ marginBottom: 13 }}>
+    {label && <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 4 }}>{label}</label>}
+    <input {...p} style={{ width: "100%", padding: "8px 11px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box", ...p.style }} />
+  </div>
+);
+
+const Sel = ({ label, children, ...p }) => (
+  <div style={{ marginBottom: 13 }}>
+    {label && <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 4 }}>{label}</label>}
+    <select {...p} style={{ width: "100%", padding: "8px 11px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box", background: C.white }}>{children}</select>
+  </div>
+);
+
+const Modal = ({ title, onClose, children, width = 480 }) => (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ background: C.white, borderRadius: 14, padding: 28, width, maxWidth: "92vw", boxShadow: "0 24px 64px rgba(0,0,0,0.22)", maxHeight: "90vh", overflowY: "auto" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h3 style={{ margin: 0, color: C.navy, fontSize: 16 }}>{title}</h3>
+        <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#aaa" }}>✕</button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+const DataTable = ({ cols, rows, emptyMsg = "Aucune donnée" }) => (
+  <div style={{ overflowX: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <thead>
+        <tr style={{ background: C.light }}>
+          {cols.map((c, i) => <th key={i} style={{ padding: "10px 13px", textAlign: "left", fontWeight: 600, color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{c.label}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.length === 0
+          ? <tr><td colSpan={cols.length} style={{ padding: 28, textAlign: "center", color: "#bbb", fontSize: 13 }}>{emptyMsg}</td></tr>
+          : rows.map((row, i) => (
+            <tr key={i} style={{ borderBottom: `1px solid ${C.light}` }}>
+              {cols.map((c, j) => <td key={j} style={{ padding: "10px 13px", color: "#333" }}>{c.render ? c.render(row[c.key], row) : row[c.key]}</td>)}
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const Card = ({ children, style = {} }) => (
+  <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, ...style }}>{children}</div>
+);
+
+const StatCard = ({ label, value, color, icon }) => (
+  <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", flex: 1, minWidth: 110, borderTop: `3px solid ${color}` }}>
+    <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><span>{icon}</span>{label}</div>
+    <div style={{ fontSize: 26, fontWeight: 700, color }}>{value}</div>
+  </div>
+);
+
+const PageHeader = ({ title, sub, action }) => (
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+    <div>
+      <h2 style={{ color: C.navy, margin: 0, fontSize: 20 }}>{title}</h2>
+      {sub && <p style={{ color: C.muted, fontSize: 13, margin: "4px 0 0" }}>{sub}</p>}
+    </div>
+    {action}
+  </div>
+);
+
+const Toast = ({ msg }) => msg ? (
+  <div style={{ position: "fixed", bottom: 24, right: 24, background: C.navy, color: C.white, padding: "12px 20px", borderRadius: 10, fontSize: 13, fontWeight: 500, zIndex: 2000, boxShadow: "0 8px 24px rgba(0,0,0,0.2)" }}>
+    ✓ {msg}
+  </div>
+) : null;
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : DASHBOARD (Directrice + Admin)
+// ════════════════════════════════════════════════════════════════════
+function Dashboard({ data, role }) {
+  const moy = data.notes.length ? (data.notes.reduce((s, n) => s + n.note, 0) / data.notes.length).toFixed(1) : "—";
+  const tauxPres = data.presences.length ? Math.round(data.presences.filter(p => p.statut === "Présent").length / data.presences.length * 100) : 0;
+
+  return (
+    <div>
+      <PageHeader title="Tableau de bord" sub={`Bienvenue sur ECOGEST — École Supérieure de Rabat`} />
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+        <StatCard label="Étudiants actifs"   value={data.etudiants.filter(e => e.statut === "Actif").length} color={C.navy}   icon="🎓" />
+        <StatCard label="Professeurs"         value={data.professeurs.length}  color={C.green}  icon="👨‍🏫" />
+        <StatCard label="Cours dispensés"     value={data.cours.length}        color={C.orange} icon="📚" />
+        <StatCard label="Moyenne générale"    value={`${moy}/20`}              color={C.purple} icon="📊" />
+        <StatCard label="Taux de présence"    value={`${tauxPres}%`}           color={C.green}  icon="✅" />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Card style={{ padding: 20 }}>
+          <h4 style={{ margin: "0 0 14px", color: C.navy, fontSize: 14 }}>Derniers étudiants inscrits</h4>
+          {data.etudiants.slice(0, 4).map(e => (
+            <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.light}` }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{e.prenom} {e.nom}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>{e.filiere} — {e.annee} année · {e.email}</div>
+              </div>
+              <Badge color={e.statut === "Actif" ? C.green : C.muted}>{e.statut}</Badge>
+            </div>
+          ))}
+        </Card>
+
+        <Card style={{ padding: 20 }}>
+          <h4 style={{ margin: "0 0 14px", color: C.navy, fontSize: 14 }}>Dernières notes saisies</h4>
+          {data.notes.slice(0, 4).map(n => {
+            const [men, col] = mention(n.note);
+            return (
+              <div key={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.light}` }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{n.etudiant}</div>
+                  <div style={{ fontSize: 11, color: C.muted }}>{n.module} — {n.semestre}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontWeight: 700, color: col, fontSize: 15 }}>{n.note}/20</div>
+                  <Badge color={col} size={10}>{men}</Badge>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      </div>
+
+      <Card style={{ padding: 20 }}>
+        <h4 style={{ margin: "0 0 14px", color: C.navy, fontSize: 14 }}>Annonces récentes</h4>
+        {data.annonces.map(a => (
+          <div key={a.id} style={{ display: "flex", gap: 14, padding: "10px 0", borderBottom: `1px solid ${C.light}` }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: C.navyLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>📢</div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: C.navy }}>{a.titre}</div>
+              <div style={{ fontSize: 12, color: "#555", margin: "2px 0" }}>{a.contenu}</div>
+              <div style={{ fontSize: 11, color: C.muted }}>{a.auteur} · {a.date} · <Badge size={10} color={C.navy}>{a.cible}</Badge></div>
+            </div>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : ÉTUDIANTS
+// ════════════════════════════════════════════════════════════════════
+function Etudiants({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "directrice"].includes(role);
+  const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ nom:"", prenom:"", cne:"", filiere:"MGE", annee:"1ère", email:"", statut:"Actif", genre:"M" });
+
+  const filtered = data.etudiants.filter(e =>
+    `${e.nom} ${e.prenom} ${e.cne} ${e.email}`.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleSave = () => {
+    const newEt = { ...form, id: Date.now() };
+    setData(d => ({ ...d, etudiants: [...d.etudiants, newEt] }));
+    // En production : await spAdd(SP.lists.etudiants, newEt)
+    toast("Étudiant enregistré dans SharePoint ✓");
+    setShowModal(false);
+    setForm({ nom:"", prenom:"", cne:"", filiere:"MGE", annee:"1ère", email:"", statut:"Actif", genre:"M" });
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Étudiants"
+        sub={`${filtered.length} étudiant(s) — données stockées dans SharePoint ECOGEST`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Ajouter un étudiant</Btn>}
+      />
+      <input placeholder="🔍  Rechercher par nom, CNE ou email..." value={search}
+        onChange={e => setSearch(e.target.value)}
+        style={{ width: "100%", padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, marginBottom: 14, boxSizing: "border-box", fontFamily: "inherit" }} />
+
+      <Card style={{ overflow: "hidden" }}>
+        <DataTable
+          cols={[
+            { key:"cne",     label:"CNE" },
+            { key:"prenom",  label:"Prénom" },
+            { key:"nom",     label:"Nom" },
+            { key:"genre",   label:"Genre", render: v => v === "F" ? "Femme" : "Homme" },
+            { key:"filiere", label:"Filière" },
+            { key:"annee",   label:"Année", render: v => `${v} année` },
+            { key:"email",   label:"Email" },
+            { key:"statut",  label:"Statut", render: v => <Badge color={v === "Actif" ? C.green : C.muted}>{v}</Badge> },
+          ]}
+          rows={filtered}
+          emptyMsg="Aucun étudiant trouvé"
+        />
+      </Card>
+
+      {showModal && (
+        <Modal title="Ajouter un étudiant → SharePoint" onClose={() => setShowModal(false)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <Input label="Nom *"    value={form.nom}    onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} />
+            <Input label="Prénom *" value={form.prenom} onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <Input label="CNE *" value={form.cne} onChange={e => setForm(f => ({ ...f, cne: e.target.value }))} placeholder="P123456" />
+            <Input label="Email *" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="etudiant@esr.ma" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
+            <Sel label="Filière" value={form.filiere} onChange={e => setForm(f => ({ ...f, filiere: e.target.value }))}>
+              <option>MGE</option><option>GRH</option><option>Finance</option><option>Marketing</option>
+            </Sel>
+            <Sel label="Année" value={form.annee} onChange={e => setForm(f => ({ ...f, annee: e.target.value }))}>
+              <option>1ère</option><option>2ème</option><option>3ème</option>
+            </Sel>
+            <Sel label="Genre" value={form.genre} onChange={e => setForm(f => ({ ...f, genre: e.target.value }))}>
+              <option value="M">Homme</option><option value="F">Femme</option>
+            </Sel>
+          </div>
+          <Sel label="Statut" value={form.statut} onChange={e => setForm(f => ({ ...f, statut: e.target.value }))}>
+            <option>Actif</option><option>Inactif</option><option>Suspendu</option>
+          </Sel>
+          <div style={{ background: "#f0f7ff", border: "1px solid #bee3f8", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#2b6cb0", marginBottom: 16 }}>
+            📌 Les données seront enregistrées dans la liste <strong>"{SP.lists.etudiants}"</strong> sur <strong>SharePoint ECOGEST</strong>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.nom || !form.prenom || !form.cne}>Enregistrer → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : PROFESSEURS
+// ════════════════════════════════════════════════════════════════════
+function Professeurs({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "directrice"].includes(role);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ nom:"", prenom:"", cin:"", matiere:"", email:"", statut:"Actif", type:"Permanent" });
+
+  const handleSave = () => {
+    setData(d => ({ ...d, professeurs: [...d.professeurs, { ...form, id: Date.now() }] }));
+    // En production : await spAdd(SP.lists.professeurs, form)
+    toast("Professeur enregistré dans SharePoint ✓");
+    setShowModal(false);
+    setForm({ nom:"", prenom:"", cin:"", matiere:"", email:"", statut:"Actif", type:"Permanent" });
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Corps enseignant"
+        sub={`${data.professeurs.length} professeur(s) — liste SharePoint "${SP.lists.professeurs}"`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Ajouter un professeur</Btn>}
+      />
+      <Card style={{ overflow: "hidden" }}>
+        <DataTable
+          cols={[
+            { key:"cin",      label:"CIN" },
+            { key:"prenom",   label:"Prénom" },
+            { key:"nom",      label:"Nom" },
+            { key:"matiere",  label:"Matière enseignée" },
+            { key:"type",     label:"Type", render: v => <Badge color={v === "Permanent" ? C.navy : C.orange}>{v}</Badge> },
+            { key:"email",    label:"Email" },
+            { key:"statut",   label:"Statut", render: v => <Badge color={v === "Actif" ? C.green : C.muted}>{v}</Badge> },
+          ]}
+          rows={data.professeurs}
+        />
+      </Card>
+
+      {showModal && (
+        <Modal title="Ajouter un professeur → SharePoint" onClose={() => setShowModal(false)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <Input label="Nom *"    value={form.nom}    onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} />
+            <Input label="Prénom *" value={form.prenom} onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <Input label="CIN *"   value={form.cin}   onChange={e => setForm(f => ({ ...f, cin: e.target.value }))} />
+            <Input label="Email *" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+          </div>
+          <Input label="Matière enseignée *" value={form.matiere} onChange={e => setForm(f => ({ ...f, matiere: e.target.value }))} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <Sel label="Type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+              <option>Permanent</option><option>Vacataire</option>
+            </Sel>
+            <Sel label="Statut" value={form.statut} onChange={e => setForm(f => ({ ...f, statut: e.target.value }))}>
+              <option>Actif</option><option>Inactif</option>
+            </Sel>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.nom || !form.prenom}>Enregistrer → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : NOTES
+// ════════════════════════════════════════════════════════════════════
+function Notes({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "professeur"].includes(role);
+  const isEtudiant = role === "etudiant";
+  const [showModal, setShowModal] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [form, setForm] = useState({ etudiantId:"", etudiant:"", module:"", note:"", semestre:"S1", coef:1, date: new Date().toISOString().split("T")[0] });
+
+  const rows = isEtudiant
+    ? data.notes.filter(n => n.etudiantId === 1) // en prod: id de l'étudiant connecté
+    : data.notes.filter(n => !filter || n.semestre === filter);
+
+  const moy = rows.length ? (rows.reduce((s, n) => s + n.note, 0) / rows.length).toFixed(2) : "—";
+
+  const handleSave = () => {
+    const et = data.etudiants.find(e => e.id === parseInt(form.etudiantId));
+    const newNote = { ...form, id: Date.now(), note: parseFloat(form.note), etudiant: et ? `${et.prenom} ${et.nom}` : form.etudiant };
+    setData(d => ({ ...d, notes: [...d.notes, newNote] }));
+    // En production : await spAdd(SP.lists.notes, newNote)
+    toast("Note enregistrée dans SharePoint ✓");
+    setShowModal(false);
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Notes & Résultats"
+        sub={`Moyenne : ${moy}/20 — liste SharePoint "${SP.lists.notes}"`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Saisir une note</Btn>}
+      />
+
+      {!isEtudiant && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+          {["", "S1","S2","S3","S4","S5","S6"].map(s => (
+            <button key={s} onClick={() => setFilter(s)} style={{
+              padding: "5px 14px", borderRadius: 20, border: `1px solid ${C.border}`,
+              background: filter === s ? C.navy : C.white, color: filter === s ? C.white : "#555",
+              fontSize: 12, cursor: "pointer", fontFamily: "inherit"
+            }}>{s || "Tous"}</button>
+          ))}
+        </div>
+      )}
+
+      <Card style={{ overflow: "hidden" }}>
+        <DataTable
+          cols={[
+            { key:"etudiant",  label:"Étudiant" },
+            { key:"module",    label:"Module" },
+            { key:"semestre",  label:"Semestre" },
+            { key:"coef",      label:"Coef." },
+            { key:"note",      label:"Note /20", render: v => {
+              const [, col] = mention(v);
+              return <span style={{ fontWeight: 700, color: col, fontSize: 14 }}>{v}</span>;
+            }},
+            { key:"note", label:"Mention", render: v => { const [men, col] = mention(v); return <Badge color={col}>{men}</Badge>; }},
+            { key:"date",      label:"Date" },
+          ]}
+          rows={rows}
+          emptyMsg="Aucune note enregistrée"
+        />
+      </Card>
+
+      {showModal && (
+        <Modal title="Saisir une note → SharePoint" onClose={() => setShowModal(false)}>
+          <Sel label="Étudiant *" value={form.etudiantId} onChange={e => setForm(f => ({ ...f, etudiantId: e.target.value }))}>
+            <option value="">-- Sélectionner un étudiant --</option>
+            {data.etudiants.map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom} — {e.filiere}</option>)}
+          </Sel>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+            <Input label="Module *" value={form.module} onChange={e => setForm(f => ({ ...f, module: e.target.value }))} />
+            <Sel label="Semestre" value={form.semestre} onChange={e => setForm(f => ({ ...f, semestre: e.target.value }))}>
+              {["S1","S2","S3","S4","S5","S6"].map(s => <option key={s}>{s}</option>)}
+            </Sel>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
+            <Input label="Note /20 *" type="number" min="0" max="20" step="0.25" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+            <Input label="Coefficient" type="number" min="1" max="5" value={form.coef} onChange={e => setForm(f => ({ ...f, coef: e.target.value }))} />
+            <Input label="Date" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+          </div>
+          {form.note && <div style={{ background: "#f0fff4", border: "1px solid #9ae6b4", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: C.green, marginBottom: 12 }}>
+            {(() => { const [men, col] = mention(parseFloat(form.note)); return `Mention : ${men}`; })()}
+          </div>}
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.etudiantId || !form.module || !form.note}>Enregistrer → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : PRÉSENCES
+// ════════════════════════════════════════════════════════════════════
+function Presences({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "professeur"].includes(role);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ etudiant:"", module:"", date: new Date().toISOString().split("T")[0], heure:"08h00", statut:"Présent" });
+
+  const presents = data.presences.filter(p => p.statut === "Présent").length;
+  const absents  = data.presences.filter(p => p.statut === "Absent").length;
+  const justifie = data.presences.filter(p => p.statut === "Justifié").length;
+
+  const handleSave = () => {
+    setData(d => ({ ...d, presences: [...d.presences, { ...form, id: Date.now() }] }));
+    toast("Présence enregistrée dans SharePoint ✓");
+    setShowModal(false);
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Gestion des présences"
+        sub={`Liste SharePoint "${SP.lists.presences}" — ${data.presences.length} enregistrements`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Enregistrer</Btn>}
+      />
+      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+        <StatCard label="Présents"  value={presents}  color={C.green}  icon="✅" />
+        <StatCard label="Absents"   value={absents}   color={C.red}    icon="❌" />
+        <StatCard label="Justifiés" value={justifie}  color={C.orange} icon="📄" />
+        <StatCard label="Taux de présence" value={data.presences.length ? `${Math.round(presents/data.presences.length*100)}%` : "—"} color={C.purple} icon="📈" />
+      </div>
+
+      <Card style={{ overflow: "hidden" }}>
+        <DataTable
+          cols={[
+            { key:"etudiant", label:"Étudiant" },
+            { key:"module",   label:"Module" },
+            { key:"date",     label:"Date" },
+            { key:"heure",    label:"Heure" },
+            { key:"statut",   label:"Statut", render: v => (
+              <Badge color={v === "Présent" ? C.green : v === "Absent" ? C.red : C.orange}>{v}</Badge>
+            )},
+          ]}
+          rows={data.presences}
+        />
+      </Card>
+
+      {showModal && (
+        <Modal title="Enregistrer une présence → SharePoint" onClose={() => setShowModal(false)}>
+          <Sel label="Étudiant *" value={form.etudiant} onChange={e => setForm(f => ({ ...f, etudiant: e.target.value }))}>
+            <option value="">-- Sélectionner --</option>
+            {data.etudiants.map(e => <option key={e.id}>{e.prenom} {e.nom}</option>)}
+          </Sel>
+          <Sel label="Module *" value={form.module} onChange={e => setForm(f => ({ ...f, module: e.target.value }))}>
+            <option value="">-- Sélectionner --</option>
+            {data.cours.map(c => <option key={c.id}>{c.intitule}</option>)}
+          </Sel>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
+            <Input label="Date" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+            <Input label="Heure" value={form.heure} onChange={e => setForm(f => ({ ...f, heure: e.target.value }))} placeholder="08h00" />
+            <Sel label="Statut" value={form.statut} onChange={e => setForm(f => ({ ...f, statut: e.target.value }))}>
+              <option>Présent</option><option>Absent</option><option>Justifié</option>
+            </Sel>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.etudiant || !form.module}>Enregistrer → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : COURS
+// ════════════════════════════════════════════════════════════════════
+function Cours({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "directrice"].includes(role);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ intitule:"", professeur:"", filiere:"MGE", semestre:"S1", heures:"", salle:"" });
+
+  const handleSave = () => {
+    setData(d => ({ ...d, cours: [...d.cours, { ...form, id: Date.now(), heures: parseInt(form.heures) }] }));
+    toast("Cours enregistré dans SharePoint ✓");
+    setShowModal(false);
+    setForm({ intitule:"", professeur:"", filiere:"MGE", semestre:"S1", heures:"", salle:"" });
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Cours & Modules"
+        sub={`${data.cours.length} cours — liste SharePoint "${SP.lists.cours}"`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Ajouter un cours</Btn>}
+      />
+      <Card style={{ overflow: "hidden" }}>
+        <DataTable
+          cols={[
+            { key:"intitule",   label:"Intitulé" },
+            { key:"professeur", label:"Professeur" },
+            { key:"filiere",    label:"Filière" },
+            { key:"semestre",   label:"Semestre", render: v => <Badge color={C.navy}>{v}</Badge> },
+            { key:"heures",     label:"Volume horaire", render: v => `${v}h` },
+            { key:"salle",      label:"Salle" },
+          ]}
+          rows={data.cours}
+        />
+      </Card>
+
+      {showModal && (
+        <Modal title="Ajouter un cours → SharePoint" onClose={() => setShowModal(false)}>
+          <Input label="Intitulé du cours *" value={form.intitule} onChange={e => setForm(f => ({ ...f, intitule: e.target.value }))} />
+          <Sel label="Professeur *" value={form.professeur} onChange={e => setForm(f => ({ ...f, professeur: e.target.value }))}>
+            <option value="">-- Sélectionner --</option>
+            {data.professeurs.map(p => <option key={p.id}>{p.prenom} {p.nom}</option>)}
+          </Sel>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
+            <Sel label="Filière" value={form.filiere} onChange={e => setForm(f => ({ ...f, filiere: e.target.value }))}>
+              <option>MGE</option><option>GRH</option><option>Finance</option>
+            </Sel>
+            <Sel label="Semestre" value={form.semestre} onChange={e => setForm(f => ({ ...f, semestre: e.target.value }))}>
+              {["S1","S2","S3","S4","S5","S6"].map(s => <option key={s}>{s}</option>)}
+            </Sel>
+            <Input label="Volume (h)" type="number" value={form.heures} onChange={e => setForm(f => ({ ...f, heures: e.target.value }))} />
+          </div>
+          <Input label="Salle" value={form.salle} onChange={e => setForm(f => ({ ...f, salle: e.target.value }))} placeholder="A101" />
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.intitule || !form.professeur}>Enregistrer → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : ANNONCES
+// ════════════════════════════════════════════════════════════════════
+function Annonces({ data, setData, role, toast }) {
+  const canEdit = ["administrateur", "directrice"].includes(role);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ titre:"", contenu:"", auteur:"", cible:"Tous", date: new Date().toISOString().split("T")[0] });
+
+  const handleSave = () => {
+    setData(d => ({ ...d, annonces: [{ ...form, id: Date.now() }, ...d.annonces] }));
+    toast("Annonce publiée dans SharePoint ✓");
+    setShowModal(false);
+    setForm({ titre:"", contenu:"", auteur:"", cible:"Tous", date: new Date().toISOString().split("T")[0] });
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Annonces"
+        sub={`${data.annonces.length} annonce(s) publiée(s) sur ECOGEST`}
+        action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Publier une annonce</Btn>}
+      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {data.annonces.map(a => (
+          <Card key={a.id} style={{ padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", gap: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: C.navyLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>📢</div>
+                <div>
+                  <h4 style={{ margin: "0 0 6px", color: C.navy, fontSize: 15 }}>{a.titre}</h4>
+                  <p style={{ margin: "0 0 8px", fontSize: 13, color: "#444", lineHeight: 1.6 }}>{a.contenu}</p>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: C.muted }}>{a.auteur} · {a.date}</span>
+                    <Badge color={C.navy} size={11}>{a.cible}</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {showModal && (
+        <Modal title="Publier une annonce → SharePoint" onClose={() => setShowModal(false)}>
+          <Input label="Titre *" value={form.titre} onChange={e => setForm(f => ({ ...f, titre: e.target.value }))} />
+          <div style={{ marginBottom: 13 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 4 }}>Contenu *</label>
+            <textarea value={form.contenu} onChange={e => setForm(f => ({ ...f, contenu: e.target.value }))} rows={4}
+              style={{ width: "100%", padding: "8px 11px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
+            <Input label="Auteur" value={form.auteur} onChange={e => setForm(f => ({ ...f, auteur: e.target.value }))} />
+            <Sel label="Destinataires" value={form.cible} onChange={e => setForm(f => ({ ...f, cible: e.target.value }))}>
+              <option>Tous</option><option>Étudiants</option><option>Professeurs</option><option>Administration</option>
+            </Sel>
+            <Input label="Date" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="light" onClick={() => setShowModal(false)}>Annuler</Btn>
+            <Btn onClick={handleSave} disabled={!form.titre || !form.contenu}>Publier → SharePoint</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MODULE : CONFIGURATION SHAREPOINT (Admin seulement)
+// ════════════════════════════════════════════════════════════════════
+function Configuration({ toast }) {
+  const [cfg, setCfg] = useState({ tenantId: SP.tenantId, clientId: SP.clientId, siteUrl: SP.siteUrl });
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <div>
+      <PageHeader title="Configuration SharePoint" sub="Connexion à ecolesuperieurederabat.sharepoint.com/sites/ECOGEST" />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div>
+          <Card style={{ padding: 24, marginBottom: 16 }}>
+            <h4 style={{ margin: "0 0 16px", color: C.navy }}>Paramètres Azure AD</h4>
+            <div style={{ background: "#fff8f0", border: "1px solid #ffd9b8", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#a05020" }}>
+              💡 Récupérez ces informations sur <strong>portal.azure.com</strong> → Azure Active Directory → Inscriptions d'applications
+            </div>
+            <Input label="URL SharePoint" value={cfg.siteUrl} onChange={e => setCfg(c => ({ ...c, siteUrl: e.target.value }))} />
+            <Input label="Tenant ID" value={cfg.tenantId} onChange={e => setCfg(c => ({ ...c, tenantId: e.target.value }))} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            <Input label="Client ID" value={cfg.clientId} onChange={e => setCfg(c => ({ ...c, clientId: e.target.value }))} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            <Input label="Client Secret" type="password" placeholder="••••••••••••••••" />
+            <div style={{ display: "flex", gap: 10 }}>
+              <Btn onClick={() => { setSaved(true); toast("Configuration sauvegardée ✓"); setTimeout(() => setSaved(false), 2000); }}>
+                {saved ? "✓ Sauvegardé !" : "Sauvegarder"}
+              </Btn>
+              <Btn variant="navy">Tester la connexion</Btn>
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <Card style={{ padding: 24 }}>
+            <h4 style={{ margin: "0 0 16px", color: C.navy }}>Listes SharePoint à créer</h4>
+            <p style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>Créez ces listes dans votre site ECOGEST avec les colonnes correspondantes :</p>
+            {[
+              { nom: "Etudiants",    cols: "Nom, Prénom, CNE, Filière, Année, Email, Statut, Genre" },
+              { nom: "Professeurs",  cols: "Nom, Prénom, CIN, Matière, Email, Type, Statut" },
+              { nom: "Notes",        cols: "EtudiantId, Étudiant, Module, Note, Semestre, Coef, Date" },
+              { nom: "Presences",    cols: "Étudiant, Module, Date, Heure, Statut" },
+              { nom: "Cours",        cols: "Intitulé, Professeur, Filière, Semestre, Heures, Salle" },
+              { nom: "Annonces",     cols: "Titre, Contenu, Auteur, Cible, Date" },
+            ].map(l => (
+              <div key={l.nom} style={{ padding: "10px 0", borderBottom: `1px solid ${C.light}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: C.navy }}>{l.nom}</div>
+                  <Badge color={C.green} size={10}>À créer</Badge>
+                </div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>{l.cols}</div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  NAVIGATION PAR RÔLE
+// ════════════════════════════════════════════════════════════════════
+const NAV_BY_ROLE = {
+  directrice:     ["dashboard", "etudiants", "professeurs", "notes", "presences", "cours", "annonces"],
+  administrateur: ["dashboard", "etudiants", "professeurs", "notes", "presences", "cours", "annonces", "config"],
+  professeur:     ["notes", "presences", "cours", "annonces"],
+  etudiant:       ["notes", "presences", "annonces"],
+};
+
+const NAV_ITEMS = {
+  dashboard:   { label: "Tableau de bord", icon: "🏠" },
+  etudiants:   { label: "Étudiants",       icon: "🎓" },
+  professeurs: { label: "Professeurs",     icon: "👨‍🏫" },
+  notes:       { label: "Notes",           icon: "📊" },
+  presences:   { label: "Présences",       icon: "✅" },
+  cours:       { label: "Cours",           icon: "📚" },
+  annonces:    { label: "Annonces",        icon: "📢" },
+  config:      { label: "Config. SharePoint", icon: "⚙️" },
+};
+
+// ════════════════════════════════════════════════════════════════════
+//  LOGIN SCREEN
+// ════════════════════════════════════════════════════════════════════
+function LoginScreen({ onLogin }) {
+  const [sel, setSel] = useState("");
+  return (
+    <div style={{ minHeight: "100vh", background: C.navy, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+      <div style={{ background: C.white, borderRadius: 16, padding: "36px 40px", width: 380, boxShadow: "0 32px 80px rgba(0,0,0,0.3)" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🎓</div>
+          <h1 style={{ color: C.navy, margin: 0, fontSize: 22, fontWeight: 700 }}>ECOGEST</h1>
+          <p style={{ color: C.muted, fontSize: 13, margin: "6px 0 0" }}>École Supérieure de Rabat</p>
+          <p style={{ color: C.muted, fontSize: 11, margin: "4px 0 0" }}>ecolesuperieurederabat.sharepoint.com/sites/ECOGEST</p>
+        </div>
+
+        <div style={{ background: "#f0f7ff", border: "1px solid #bee3f8", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#2b6cb0", marginBottom: 20 }}>
+          🔐 En production, connexion via <strong>Microsoft SSO</strong> avec votre compte @ecolesuperieurederabat.ma
+        </div>
+
+        <p style={{ fontSize: 13, color: "#555", marginBottom: 12, fontWeight: 600 }}>Sélectionnez votre rôle (démo) :</p>
+        {Object.entries(ROLES).map(([key, r]) => (
+          <button key={key} onClick={() => setSel(key)} style={{
+            display: "flex", alignItems: "center", gap: 12, width: "100%",
+            padding: "12px 16px", marginBottom: 8, borderRadius: 10,
+            border: `2px solid ${sel === key ? r.color : C.border}`,
+            background: sel === key ? r.color + "12" : C.white,
+            cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s"
+          }}>
+            <span style={{ fontSize: 22 }}>{r.icon}</span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: sel === key ? r.color : C.navy }}>{r.label}</div>
+              <div style={{ fontSize: 11, color: C.muted }}>Accès {key === "etudiant" ? "lecture seule" : key === "professeur" ? "notes & présences" : "complet"}</div>
+            </div>
+          </button>
+        ))}
+
+        <Btn onClick={() => sel && onLogin(sel)} disabled={!sel} style={{ width: "100%", marginTop: 8, justifyContent: "center", display: "block" }}>
+          Se connecter
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  APP PRINCIPALE
+// ════════════════════════════════════════════════════════════════════
+function App() {
+  const [role, setRole] = useState(null);
+  const [active, setActive] = useState("dashboard");
+  const [data, setData] = useState(DEMO);
+  const [toastMsg, setToastMsg] = useState("");
+
+  const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(""), 3000); };
+
+  const handleLogin = (r) => {
+    setRole(r);
+    setActive(NAV_BY_ROLE[r][0]);
+  };
+
+  if (!role) return <LoginScreen onLogin={handleLogin} />;
+
+  const navItems = NAV_BY_ROLE[role];
+  const PAGES = { dashboard: Dashboard, etudiants: Etudiants, professeurs: Professeurs, notes: Notes, presences: Presences, cours: Cours, annonces: Annonces, config: Configuration };
+  const Page = PAGES[active];
+  const roleInfo = ROLES[role];
+
+  return (
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'Segoe UI', system-ui, sans-serif", background: C.light, overflow: "hidden" }}>
+      {/* Sidebar */}
+      <div style={{ width: 230, background: C.navy, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" }}>
+        <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>École Supérieure de Rabat</div>
+          <div style={{ fontSize: 19, fontWeight: 700, color: C.white }}>ECO<span style={{ color: C.orange }}>GEST</span></div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>ECOGEST · SharePoint 365</div>
+        </div>
+
+        <div style={{ padding: "10px 10px 4px" }}>
+          <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>{roleInfo.icon}</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.white }}>{roleInfo.label}</div>
+              <div style={{ fontSize: 10, color: roleInfo.color }}>Connecté</div>
+            </div>
+          </div>
+        </div>
+
+        <nav style={{ flex: 1, padding: "8px 0" }}>
+          {navItems.map(key => {
+            const item = NAV_ITEMS[key];
+            const isActive = active === key;
+            return (
+              <button key={key} onClick={() => setActive(key)} style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%",
+                padding: "9px 16px", border: "none", cursor: "pointer", textAlign: "left",
+                background: isActive ? "rgba(229,107,45,0.18)" : "transparent",
+                color: isActive ? C.orange : "rgba(255,255,255,0.65)",
+                fontSize: 13, fontFamily: "inherit", fontWeight: isActive ? 600 : 400,
+                borderLeft: `3px solid ${isActive ? C.orange : "transparent"}`,
+                transition: "all 0.12s",
+              }}>
+                <span style={{ fontSize: 16 }}>{item.icon}</span>
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.6 }}>
+            <span style={{ color: C.orange }}>● </span>SharePoint ECOGEST<br />
+            ecolesuperieurederabat<br />.sharepoint.com/sites/ECOGEST
+          </div>
+          <button onClick={() => setRole(null)} style={{ marginTop: 10, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 12, padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", width: "100%" }}>
+            Déconnexion
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "24px 28px" }}>
+          <Page data={data} setData={setData} role={role} toast={toast} />
+        </div>
+      </div>
+
+      <Toast msg={toastMsg} />
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
