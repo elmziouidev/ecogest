@@ -1198,10 +1198,10 @@ const MSAL_CONFIG = {
 
 // Annuaire des utilisateurs et leurs rôles
 const USER_ROLES = {
-  "i.elmzioui@esrmi.ma":   { role: "administrateur", nom: "Iliass ELMZIOUI" },
-  "fz.zniber@esrmi.ma":    { role: "directrice",     nom: "Fatima Zahra ZNIBER" },
-  "k.bouabid@esrmi.ma":    { role: "administrateur", nom: "Kawtar BOUABID" },
-  "a.bahalla@esrmi.ma":    { role: "administrateur", nom: "Adila BAHALLA" },
+  "i.elmzioui@esrmi.ma":   { role: "administrateur", nom: "Iliass ELMZIOUI",        titre: "Administrateur de l'application" },
+  "fz.zniber@esrmi.ma":    { role: "directrice",     nom: "Fatima Zahra ZNIBER",    titre: "Directrice" },
+  "k.bouabid@esrmi.ma":    { role: "directrice",     nom: "Kawtar BOUABID",          titre: "Assistante de direction" },
+  "a.bahalla@esrmi.ma":    { role: "directrice",     nom: "Adila BAHALLA",           titre: "Responsable Communication" },
 };
 
 // Fonction pour obtenir le token MSAL via popup
@@ -1294,8 +1294,8 @@ function LoginScreen({ onLogin }) {
         {/* Rôles info */}
         <div style={{ marginBottom: 24 }}>
           {[
-            { icon: "👩‍💼", label: "Directrice", desc: "fz.zniber@esrmi.ma", color: C.purple },
-            { icon: "⚙️",  label: "Administrateurs", desc: "i.elmzioui · k.bouabid · a.bahalla", color: C.navy },
+            { icon: "👩‍💼", label: "Directrice & Équipe direction", desc: "fz.zniber · k.bouabid · a.bahalla", color: C.purple },
+            { icon: "⚙️",  label: "Administrateur", desc: "i.elmzioui@esrmi.ma uniquement", color: C.navy },
             { icon: "👨‍🏫", label: "Professeurs", desc: "Accès notes & présences", color: C.green },
             { icon: "🎓",  label: "Étudiants", desc: "Consultation uniquement", color: C.orange },
           ].map((r, i) => (
