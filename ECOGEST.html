@@ -7,28 +7,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; }
-    #root { height: 100vh; }
-  </style>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif}#root{height:100vh}</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
+  <div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a2f5e;color:white;font-family:sans-serif;font-size:18px;">⏳ Chargement de ECOGEST...</div></div>
+  <script type="text/babel" data-presets="react">
     const { useState, useEffect } = React;
 
-
-
-// ════════════════════════════════════════════════════════════════════
-//  SHAREPOINT CONFIG — remplacez par vos vraies valeurs Azure AD
-// ════════════════════════════════════════════════════════════════════
 const SP = {
-  siteUrl: "https://ecolesuperieurederabat.sharepoint.com/sites/ECOGEST",
+  siteUrl: "https:
   tenantId: "VOTRE_TENANT_ID",
   clientId: "VOTRE_CLIENT_ID",
-  // En production : authentification via MSAL (Microsoft Auth Library)
-  // Les listes à créer dans SharePoint :
   lists: {
     etudiants:   "Etudiants",
     professeurs: "Professeurs",
@@ -41,93 +30,6 @@ const SP = {
     filieres:    "Filieres",
   },
 };
-
-// ════════════════════════════════════════════════════════════════════
-//  SHAREPOINT GRAPH API  (décommentez en production)
-// ════════════════════════════════════════════════════════════════════
-/*
-import * as msal from "@azure/msal-browser";
-
-const msalConfig = {
-  auth: {
-    clientId: SP.clientId,
-    authority: `https://login.microsoftonline.com/${SP.tenantId}`,
-    redirectUri: window.location.origin,
-  },
-};
-const msalInstance = new msal.PublicClientApplication(msalConfig);
-const scopes = ["https://graph.microsoft.com/Sites.ReadWrite.All"];
-
-async function getToken() {
-  const accounts = msalInstance.getAllAccounts();
-  const request = { scopes, account: accounts[0] };
-  const resp = await msalInstance.acquireTokenSilent(request)
-    .catch(() => msalInstance.acquireTokenPopup(request));
-  return resp.accessToken;
-}
-
-async function spGet(list) {
-  const token = await getToken();
-  const siteId = await getSiteId(token);
-  const res = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items?expand=fields&$top=500`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  const data = await res.json();
-  return data.value.map(i => ({ id: i.id, ...i.fields }));
-}
-
-async function spAdd(list, fields) {
-  const token = await getToken();
-  const siteId = await getSiteId(token);
-  const res = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ fields }),
-    }
-  );
-  return await res.json();
-}
-
-async function spUpdate(list, itemId, fields) {
-  const token = await getToken();
-  const siteId = await getSiteId(token);
-  await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items/${itemId}/fields`,
-    {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    }
-  );
-}
-
-async function spDelete(list, itemId) {
-  const token = await getToken();
-  const siteId = await getSiteId(token);
-  await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${list}/items/${itemId}`,
-    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
-  );
-}
-
-async function getSiteId(token) {
-  const host = "ecolesuperieurederabat.sharepoint.com";
-  const path = "/sites/ECOGEST";
-  const res = await fetch(
-    `https://graph.microsoft.com/v1.0/sites/${host}:${path}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  const data = await res.json();
-  return data.id;
-}
-*/
-
-// ════════════════════════════════════════════════════════════════════
-//  DONNÉES DE DÉMONSTRATION (remplacées par SharePoint en prod)
-// ════════════════════════════════════════════════════════════════════
 const DEMO = {
   etudiants: [
     { id:1, nom:"Alami",   prenom:"Youssef", cne:"P123456", filiere:"MGE", annee:"2ème", email:"y.alami@esr.ma",   statut:"Actif",   genre:"M" },
@@ -181,10 +83,6 @@ const DEMO = {
     { id:8, code:"MS",     intitule:"BAC+5 en Management Stratégique",                                       niveau:"BAC+5", duree:2, capacite:25, frais:23000, statut:"Active",   description:"Formation en management et stratégie d'entreprise.", responsable:"", couleur:"#1a2f5e" },
   ],
 };
-
-// ════════════════════════════════════════════════════════════════════
-//  DESIGN TOKENS
-// ════════════════════════════════════════════════════════════════════
 const C = {
   navy:    "#1a2f5e",
   orange:  "#e56b2d",
@@ -197,20 +95,12 @@ const C = {
   white:   "#ffffff",
   navyLight: "#e8edf5",
 };
-
-// ════════════════════════════════════════════════════════════════════
-//  RÔLES
-// ════════════════════════════════════════════════════════════════════
 const ROLES = {
   directrice:     { label: "Directrice",     color: C.purple, icon: "👩‍💼" },
   administrateur: { label: "Administrateur", color: C.navy,   icon: "⚙️"  },
   professeur:     { label: "Professeur",     color: C.green,  icon: "👨‍🏫" },
   etudiant:       { label: "Étudiant",       color: C.orange, icon: "🎓"  },
 };
-
-// ════════════════════════════════════════════════════════════════════
-//  UTILITAIRES UI
-// ════════════════════════════════════════════════════════════════════
 const mention = (n) => n >= 16 ? ["Très bien", C.green] : n >= 14 ? ["Bien", C.navy] : n >= 10 ? ["Passable", C.orange] : ["Insuffisant", C.red];
 
 const Badge = ({ children, color = C.orange, size = 12 }) => (
@@ -301,10 +191,6 @@ const Toast = ({ msg }) => msg ? (
     ✓ {msg}
   </div>
 ) : null;
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : DASHBOARD (Directrice + Admin)
-// ════════════════════════════════════════════════════════════════════
 function Dashboard({ data, role }) {
   const moy = data.notes.length ? (data.notes.reduce((s, n) => s + n.note, 0) / data.notes.length).toFixed(1) : "—";
   const tauxPres = data.presences.length ? Math.round(data.presences.filter(p => p.statut === "Présent").length / data.presences.length * 100) : 0;
@@ -370,10 +256,6 @@ function Dashboard({ data, role }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : ÉTUDIANTS
-// ════════════════════════════════════════════════════════════════════
 function Etudiants({ data, setData, role, toast }) {
   const canEdit = ["administrateur", "directrice"].includes(role);
   const [search, setSearch] = useState("");
@@ -387,7 +269,7 @@ function Etudiants({ data, setData, role, toast }) {
   const handleSave = () => {
     const newEt = { ...form, id: Date.now() };
     setData(d => ({ ...d, etudiants: [...d.etudiants, newEt] }));
-    // En production : await spAdd(SP.lists.etudiants, newEt)
+    
     toast("Étudiant enregistré dans SharePoint ✓");
     setShowModal(false);
     setForm({ nom:"", prenom:"", cne:"", filiere:"MGE", annee:"1ère", email:"", statut:"Actif", genre:"M" });
@@ -457,10 +339,6 @@ function Etudiants({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : PROFESSEURS
-// ════════════════════════════════════════════════════════════════════
 function Professeurs({ data, setData, role, toast }) {
   const canEdit = ["administrateur", "directrice"].includes(role);
   const [showModal, setShowModal] = useState(false);
@@ -468,7 +346,7 @@ function Professeurs({ data, setData, role, toast }) {
 
   const handleSave = () => {
     setData(d => ({ ...d, professeurs: [...d.professeurs, { ...form, id: Date.now() }] }));
-    // En production : await spAdd(SP.lists.professeurs, form)
+    
     toast("Professeur enregistré dans SharePoint ✓");
     setShowModal(false);
     setForm({ nom:"", prenom:"", cin:"", matiere:"", email:"", statut:"Actif", type:"Permanent" });
@@ -524,10 +402,6 @@ function Professeurs({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : NOTES
-// ════════════════════════════════════════════════════════════════════
 function Notes({ data, setData, role, toast }) {
   const canEdit = ["administrateur", "professeur"].includes(role);
   const isEtudiant = role === "etudiant";
@@ -536,7 +410,7 @@ function Notes({ data, setData, role, toast }) {
   const [form, setForm] = useState({ etudiantId:"", etudiant:"", module:"", note:"", semestre:"S1", coef:1, date: new Date().toISOString().split("T")[0] });
 
   const rows = isEtudiant
-    ? data.notes.filter(n => n.etudiantId === 1) // en prod: id de l'étudiant connecté
+    ? data.notes.filter(n => n.etudiantId === 1) 
     : data.notes.filter(n => !filter || n.semestre === filter);
 
   const moy = rows.length ? (rows.reduce((s, n) => s + n.note, 0) / rows.length).toFixed(2) : "—";
@@ -545,7 +419,7 @@ function Notes({ data, setData, role, toast }) {
     const et = data.etudiants.find(e => e.id === parseInt(form.etudiantId));
     const newNote = { ...form, id: Date.now(), note: parseFloat(form.note), etudiant: et ? `${et.prenom} ${et.nom}` : form.etudiant };
     setData(d => ({ ...d, notes: [...d.notes, newNote] }));
-    // En production : await spAdd(SP.lists.notes, newNote)
+    
     toast("Note enregistrée dans SharePoint ✓");
     setShowModal(false);
   };
@@ -618,10 +492,6 @@ function Notes({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : PRÉSENCES
-// ════════════════════════════════════════════════════════════════════
 function Presences({ data, setData, role, toast }) {
   const canEdit = ["administrateur", "professeur"].includes(role);
   const [showModal, setShowModal] = useState(false);
@@ -692,10 +562,6 @@ function Presences({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : COURS
-// ════════════════════════════════════════════════════════════════════
 function Cours({ data, setData, role, toast }) {
   const canEdit = ["administrateur", "directrice"].includes(role);
   const [showModal, setShowModal] = useState(false);
@@ -755,10 +621,6 @@ function Cours({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : ANNONCES
-// ════════════════════════════════════════════════════════════════════
 function Annonces({ data, setData, role, toast }) {
   const canEdit = ["administrateur", "directrice"].includes(role);
   const [showModal, setShowModal] = useState(false);
@@ -822,10 +684,6 @@ function Annonces({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : CONFIGURATION SHAREPOINT (Admin seulement)
-// ════════════════════════════════════════════════════════════════════
 function Configuration({ toast }) {
   const [cfg, setCfg] = useState({ tenantId: SP.tenantId, clientId: SP.clientId, siteUrl: SP.siteUrl });
   const [saved, setSaved] = useState(false);
@@ -880,20 +738,11 @@ function Configuration({ toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : VISITEURS
-// ════════════════════════════════════════════════════════════════════
-// FILIERES dynamiques — alimentées depuis data.filieres
 const getFilieres = (data) => (data.filieres || []).filter(f => f.statut === "Active").map(f => f.intitule);
 const getTarifFiliere = (data, intitule) => {
   const f = (data.filieres || []).find(x => x.intitule === intitule);
   return f ? f.frais : 18000;
 };
-
-// ════════════════════════════════════════════════════════════════════
-//  MODULE : FILIÈRES
-// ════════════════════════════════════════════════════════════════════
 function Filieres({ data, setData, role, toast }) {
   const canEdit = ["administrateur"].includes(role);
   const [showModal, setShowModal] = useState(false);
@@ -943,8 +792,6 @@ function Filieres({ data, setData, role, toast }) {
     setData(d => ({ ...d, filieres: d.filieres.filter(f => f.id !== id) }));
     toast("Filière supprimée de SharePoint ✓");
   };
-
-  // Nb étudiants par filière
   const nbEtudiants = (intitule) => (data.etudiants||[]).filter(e => e.filiere === intitule).length;
   const nbVisiteurs = (intitule) => (data.visiteurs||[]).filter(v => v.filiereS === intitule).length;
 
@@ -956,7 +803,7 @@ function Filieres({ data, setData, role, toast }) {
         action={canEdit && <Btn onClick={openAdd}>+ Nouvelle filière</Btn>}
       />
 
-      {/* Stats */}
+      {}
       <div style={{ display:"flex", gap:12, marginBottom:20 }}>
         <StatCard label="Total filières"   value={(data.filieres||[]).length}                          color={C.navy}   icon="📚" />
         <StatCard label="BAC+3"            value={bac3.length}                                          color={C.orange} icon="🎓" />
@@ -964,7 +811,7 @@ function Filieres({ data, setData, role, toast }) {
         <StatCard label="Filières actives" value={(data.filieres||[]).filter(f=>f.statut==="Active").length} color={C.green}  icon="✅" />
       </div>
 
-      {/* Filtres */}
+      {}
       <div style={{ display:"flex", gap:8, marginBottom:14 }}>
         {["","BAC+3","BAC+5"].map(n => (
           <button key={n} onClick={() => setFilterNiveau(n)} style={{
@@ -976,11 +823,11 @@ function Filieres({ data, setData, role, toast }) {
         ))}
       </div>
 
-      {/* Grille filières */}
+      {}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
         {filtered.map(f => (
           <Card key={f.id} style={{ padding:0, overflow:"hidden", border:`1px solid ${C.border}` }}>
-            {/* Header coloré */}
+            {}
             <div style={{ background:f.couleur, padding:"14px 18px", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
               <div>
                 <div style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.7)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>{f.code} · {f.niveau}</div>
@@ -989,7 +836,7 @@ function Filieres({ data, setData, role, toast }) {
               <Badge color="rgba(255,255,255,0.9)" size={11}>{f.statut}</Badge>
             </div>
 
-            {/* Body */}
+            {}
             <div style={{ padding:"14px 18px" }}>
               {f.description && <p style={{ fontSize:12, color:C.muted, margin:"0 0 12px", lineHeight:1.5 }}>{f.description}</p>}
 
@@ -1035,7 +882,7 @@ function Filieres({ data, setData, role, toast }) {
         ))}
       </div>
 
-      {/* Modal ajout/édition */}
+      {}
       {showModal && (
         <Modal title={editItem ? "Modifier la filière" : "Nouvelle filière → SharePoint"} onClose={() => setShowModal(false)} width={600}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 14px" }}>
@@ -1103,7 +950,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit }) {
 
   return (
     <Modal title={`Fiche Visiteur — ${visiteur.prenom} ${visiteur.nom}`} onClose={onClose} width={680}>
-      {/* Statut */}
+      {}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, padding:"10px 14px", background: visiteur.statut === "Inscrit" ? "#f0fff4" : visiteur.statut === "Non intéressé" ? "#fff5f5" : "#f0f7ff", borderRadius:8, border:`1px solid ${visiteur.statut === "Inscrit" ? "#9ae6b4" : visiteur.statut === "Non intéressé" ? "#feb2b2" : "#bee3f8"}` }}>
         <div style={{ fontSize:13, fontWeight:600, color: visiteur.statut === "Inscrit" ? C.green : visiteur.statut === "Non intéressé" ? C.red : C.navy }}>
           Statut : {visiteur.statut}
@@ -1117,7 +964,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit }) {
         {visiteur.statut === "Inscrit" && <Badge color={C.green}>✓ Converti en Étudiant</Badge>}
       </div>
 
-      {/* Infos personnelles */}
+      {}
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Informations personnelles</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"6px 14px" }}>
@@ -1135,7 +982,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit }) {
         </div>
       </div>
 
-      {/* Baccalauréat */}
+      {}
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Baccalauréat & Formation souhaitée</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"6px 14px" }}>
@@ -1151,7 +998,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit }) {
         </div>
       </div>
 
-      {/* Tarif */}
+      {}
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
           Tarif de formation — Total : {totalTarif.toLocaleString()} MAD | Payé : {totalPaye.toLocaleString()} MAD | Reste : {(totalTarif - totalPaye).toLocaleString()} MAD
@@ -1181,7 +1028,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit }) {
         </div>
       </div>
 
-      {/* Documents */}
+      {}
       <div>
         <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Pièces jointes</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
@@ -1269,7 +1116,7 @@ function Visiteurs({ data, setData, role, toast }) {
         action={canEdit && <Btn onClick={() => setShowModal(true)}>+ Nouveau visiteur</Btn>}
       />
 
-      {/* Stats */}
+      {}
       <div style={{ display:"flex", gap:12, marginBottom:20 }}>
         <StatCard label="Total visiteurs"   value={stats.total}    color={C.navy}   icon="👥" />
         <StatCard label="En attente"         value={stats.visiteurs} color={C.orange} icon="⏳" />
@@ -1278,7 +1125,7 @@ function Visiteurs({ data, setData, role, toast }) {
         <StatCard label="Taux conversion"   value={stats.total ? `${Math.round(stats.inscrits/stats.total*100)}%` : "—"} color={C.purple} icon="📈" />
       </div>
 
-      {/* Filtres */}
+      {}
       <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
         <input placeholder="🔍 Rechercher nom, CIN, téléphone..." value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex:1, minWidth:200, padding:"9px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, fontFamily:"inherit" }} />
@@ -1311,7 +1158,7 @@ function Visiteurs({ data, setData, role, toast }) {
         />
       </Card>
 
-      {/* Modal ajout */}
+      {}
       {showModal && (
         <Modal title="Nouveau visiteur → SharePoint" onClose={() => setShowModal(false)} width={640}>
           <div style={{ fontSize:11, fontWeight:700, color:C.orange, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Informations personnelles</div>
@@ -1362,7 +1209,7 @@ function Visiteurs({ data, setData, role, toast }) {
         </Modal>
       )}
 
-      {/* Fiche visiteur */}
+      {}
       {showFiche && (
         <FicheVisiteur
           visiteur={showFiche}
@@ -1374,10 +1221,6 @@ function Visiteurs({ data, setData, role, toast }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  NAVIGATION PAR RÔLE
-// ════════════════════════════════════════════════════════════════════
 const NAV_BY_ROLE = {
   directrice:     ["dashboard", "filieres", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces"],
   administrateur: ["dashboard", "filieres", "visiteurs", "etudiants", "professeurs", "notes", "presences", "cours", "annonces", "config"],
@@ -1397,18 +1240,12 @@ const NAV_ITEMS = {
   annonces:    { label: "Annonces",            icon: "📢" },
   config:      { label: "Config. SharePoint",  icon: "⚙️" },
 };
-
-// ════════════════════════════════════════════════════════════════════
-//  MICROSOFT 365 AUTH CONFIG
-// ════════════════════════════════════════════════════════════════════
 const MSAL_CONFIG = {
   clientId: "0d52fee7-c6cf-4374-8063-395b2add8c91",
   tenantId: "72182bf9-410a-4e42-b9f0-4f740b3959e9",
-  redirectUri: "https://elmziouidev.github.io/ecogest/ECOGEST.html",
+  redirectUri: "https:
   scopes: ["User.Read", "profile", "email", "openid"],
 };
-
-// Annuaire des utilisateurs et leurs rôles
 const USER_ROLES = {
   "i.elmzioui@esrmi.ma":    { role: "administrateur", nom: "Iliass ELMZIOUI",        titre: "Administrateur de l'application" },
   "fz.zniber@esrmi.ma":     { role: "directrice",     nom: "Fatima Zahra ZNIBER",    titre: "Directrice" },
@@ -1416,19 +1253,17 @@ const USER_ROLES = {
   "a.bahalla@esrmi.ma":     { role: "directrice",     nom: "Adila BAHALLA",           titre: "Responsable Communication" },
   "s.elhantaoui@esrmi.ma":  { role: "directrice",     nom: "S. EL HANTAOUI",          titre: "Équipe direction" },
 };
-
-// Fonction login par REDIRECTION avec code flow PKCE
 function generateCodeVerifier() {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return btoa(String.fromCharCode(...array)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return btoa(String.fromCharCode(...array)).replace(/\+/g, '-').replace(/\
 }
 
 async function generateCodeChallenge(verifier) {
   const encoder = new TextEncoder();
   const data = encoder.encode(verifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\
 }
 
 async function msalLogin() {
@@ -1436,7 +1271,7 @@ async function msalLogin() {
   const codeChallenge = await generateCodeChallenge(codeVerifier);
   sessionStorage.setItem('code_verifier', codeVerifier);
 
-  const authorizeUrl = `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.0/authorize?` +
+  const authorizeUrl = `https:
     `client_id=${MSAL_CONFIG.clientId}` +
     `&response_type=code` +
     `&redirect_uri=${encodeURIComponent(MSAL_CONFIG.redirectUri)}` +
@@ -1452,7 +1287,7 @@ async function msalLogin() {
 async function exchangeCodeForToken(code) {
   const codeVerifier = sessionStorage.getItem('code_verifier');
   const response = await fetch(
-    `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.0/token`,
+    `https:
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1471,15 +1306,11 @@ async function exchangeCodeForToken(code) {
 }
 
 async function getUserInfo(token) {
-  const res = await fetch("https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName,jobTitle", {
+  const res = await fetch("https:
     headers: { Authorization: `Bearer ${token}` }
   });
   return await res.json();
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  LOGIN SCREEN
-// ════════════════════════════════════════════════════════════════════
 function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1559,10 +1390,6 @@ function LoginScreen({ onLogin }) {
     </div>
   );
 }
-
-// ════════════════════════════════════════════════════════════════════
-//  APP PRINCIPALE
-// ════════════════════════════════════════════════════════════════════
 function App() {
   const [role, setRole] = useState(null);
   const [user, setUser] = useState(null);
@@ -1572,8 +1399,6 @@ function App() {
   const [checking, setChecking] = useState(true);
 
   const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(""), 3000); };
-
-  // Vérifier au chargement si on revient d'une redirection Microsoft
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -1635,7 +1460,7 @@ function App() {
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Segoe UI', system-ui, sans-serif", background: C.light, overflow: "hidden" }}>
-      {/* Sidebar */}
+      {}
       <div style={{ width: 230, background: C.navy, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" }}>
         <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>École Supérieure de Rabat</div>
@@ -1686,7 +1511,7 @@ function App() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {}
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ padding: "24px 28px" }}>
           <Page data={data} setData={setData} role={role} toast={toast} />
@@ -1697,7 +1522,6 @@ function App() {
     </div>
   );
 }
-
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
