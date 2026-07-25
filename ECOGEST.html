@@ -396,7 +396,7 @@ function Configuration({ toast, user }) {
       const siteId = await getSiteIdCached(user.token);
       if (!siteId) throw new Error("Site SharePoint ECOGEST introuvable");
       const res = await fetch(
-        `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}/lists?$top=10`,
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists?$top=10`,
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
       const data = await res.json();
@@ -558,7 +558,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit, user }) {
       }
       console.log("getDriveId: siteId=", siteId);
       const res = await fetch(
-        `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}/drives`,
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -600,7 +600,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit, user }) {
       const fileName = type.replace(/[^a-zA-Z0-9]/g, "_") + "_" + file.name;
       const ab = await file.arrayBuffer();
       const res = await fetch(
-        `https://graph.microsoft.com/v1.totalPaye/drives/${driveId}/root:/${folder}/${fileName}:/content`,
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folder}/${fileName}:/content`,
         {
           method: "PUT",
           headers: { Authorization: `Bearer ${user.token}`, "Content-Type": file.type || "application/octet-stream" },
@@ -631,7 +631,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit, user }) {
       ].filter(Boolean).join("_").replace(/[^a-zA-Z0-9_\u00C0-\u017E]/g, "_").slice(0, 60) || "divers";
       const folder = `ECOGEST_Visiteurs/${folderName}`;
       const res = await fetch(
-        `https://graph.microsoft.com/v1.totalPaye/drives/${driveId}/root:/${folder}:/children`,
+        `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${folder}:/children`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -644,7 +644,7 @@ function FicheVisiteur({ visiteur, onClose, onConvertir, canEdit, user }) {
     if (!window.confirm('Supprimer "' + att.nom + '" ?')) return;
     try {
       await fetch(
-        `https://graph.microsoft.com/v1.totalPaye/drives/${window._spDriveId}/items/${att.id}`,
+        `https://graph.microsoft.com/v1.0/drives/${window._spDriveId}/items/${att.id}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${user.token}` } }
       );
       setDoc((d) => d.filter((x) => x.id !== att.id));
@@ -1285,7 +1285,7 @@ async function exchangeCodeForToken(code) {
   return data.access_token;
 }
 async function getUserInfo(token) {
-  const res = await fetch("https://graph.microsoft.com/v1.totalPaye/me?$select=displayName,mail,userPrincipalName,jobTitle", {
+  const res = await fetch("https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName,jobTitle", {
     headers: { Authorization: `Bearer ${token}` }
   });
   return await res.json();
@@ -1334,7 +1334,7 @@ async function getSiteIdCached(token) {
   if (_spSiteId) return _spSiteId;
   try {
     const res = await fetch(
-      "https://graph.microsoft.com/v1.totalPaye/sites/ecolesuperieurederabat.sharepoint.com:/sites/ECOGEST",
+      "https://graph.microsoft.com/v1.0/sites/ecolesuperieurederabat.sharepoint.com:/sites/ECOGEST",
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const data = await res.json();
@@ -1352,7 +1352,7 @@ async function getColMap(listName, token, siteId) {
   if (_colCache[listName]) return _colCache[listName];
   try {
     const res = await fetch(
-      `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}/lists/${listName}/columns`,
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listName}/columns`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const data = await res.json();
@@ -1382,7 +1382,7 @@ async function deleteFromSP(list, spId, token) {
     if (!siteId) return false;
     const listName = list.startsWith("ECOGEST_") ? list : "ECOGEST_" + list;
     const res = await fetch(
-      `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}/lists/${listName}/items/${spId}`,
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listName}/items/${spId}`,
       { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
     );
     if (res.status === 204) {
@@ -1409,7 +1409,7 @@ async function saveToSP(list, fields, token, spId) {
       return null;
     }
     const listName = list.startsWith("ECOGEST_") ? list : "ECOGEST_" + list.charAt(0).toUpperCase() + list.slice(1);
-    const base = `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}/lists/${listName}/items`;
+    const base = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listName}/items`;
     const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
     const colMap = await getColMap(listName, token, siteId);
     const titleVal = fields.Title || fields.Nom || fields.Titre || fields.Intitule || fields.Code || String(Object.values(fields)[0] || "ECOGEST");
@@ -1468,7 +1468,7 @@ async function setupSharePointLists(token) {
   const siteId = await getSiteIdCached(token);
   if (!siteId) return;
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-  const base = `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}`;
+  const base = `https://graph.microsoft.com/v1.0/sites/${siteId}`;
   for (const [listName, columns] of Object.entries(SP_LISTS_SCHEMA)) {
     try {
       const checkRes = await fetch(`${base}/lists/${listName}`, { headers });
@@ -1525,7 +1525,7 @@ async function loadAllFromSP(token) {
     console.warn("Site SharePoint inaccessible");
     return null;
   }
-  const base = `https://graph.microsoft.com/v1.totalPaye/sites/${siteId}/lists`;
+  const base = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`;
   const headers = { Authorization: `Bearer ${token}` };
   const fetchList = async (name) => {
     try {
