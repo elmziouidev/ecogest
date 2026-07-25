@@ -1259,14 +1259,14 @@ async function msalLogin() {
   const codeChallenge = await generateCodeChallenge(codeVerifier);
   sessionStorage.setItem("code_verifier", codeVerifier);
   const allScopes = MSAL_CONFIG.scopes;
-  const authorizeUrl = `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.totalPaye/authorize?client_id=${MSAL_CONFIG.clientId}&response_type=code&redirect_uri=${encodeURIComponent(MSAL_CONFIG.redirectUri)}&scope=${encodeURIComponent(allScopes.join(" "))}&response_mode=query&code_challenge=${codeChallenge}&code_challenge_method=S256&prompt=select_account`;
+  const authorizeUrl = `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.0/authorize?client_id=${MSAL_CONFIG.clientId}&response_type=code&redirect_uri=${encodeURIComponent(MSAL_CONFIG.redirectUri)}&scope=${encodeURIComponent(allScopes.join(" "))}&response_mode=query&code_challenge=${codeChallenge}&code_challenge_method=S256&prompt=select_account`;
   window.location.href = authorizeUrl;
 }
 async function exchangeCodeForToken(code) {
   const codeVerifier = sessionStorage.getItem("code_verifier");
   const allScopes = MSAL_CONFIG.scopes.join(" ");
   const response = await fetch(
-    `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.totalPaye/token`,
+    `https://login.microsoftonline.com/${MSAL_CONFIG.tenantId}/oauth2/v2.0/token`,
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
