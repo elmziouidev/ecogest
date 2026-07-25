@@ -6,7 +6,7 @@
       "id": 1784970448611,
       "Title": "F1",
       "Code": "F1",
-      "Intitule": "BAC+3 en SystÃÂ¨mes d'Information Ã¢ÂÂ Option GÃÂ©nie Logiciel",
+      "Intitule": "BAC+3 en SystÃÂÃÂ¨mes d'Information ÃÂ¢ÃÂÃÂ Option GÃÂÃÂ©nie Logiciel",
       "Niveau": "BAC+3",
       "Duree": 3,
       "Capacite": 30,
@@ -20,7 +20,7 @@
       "id": 1784970518425,
       "Title": "F2",
       "Code": "F2",
-      "Intitule": "BAC+3 en SystÃ¨mes d'Information â Option rÃ©seaux informatiques",
+      "Intitule": "BAC+3 en SystÃÂ¨mes d'Information Ã¢ÂÂ Option rÃÂ©seaux informatiques",
       "Niveau": "BAC+3",
       "Duree": 3,
       "Capacite": 30,
@@ -34,7 +34,21 @@
       "id": 1784970579279,
       "Title": "F5",
       "Code": "F5",
-      "Intitule": "BAC+5 en Cybersécurité des réseaux et des systèmes d’information ",
+      "Intitule": "BAC+5 en CybersÃ©curitÃ© des rÃ©seaux et des systÃ¨mes dâinformation ",
+      "Niveau": "BAC+3",
+      "Duree": 3,
+      "Capacite": 30,
+      "Frais": 18000,
+      "Statut": "Active",
+      "Description": "",
+      "Responsable": "ZFZ",
+      "Couleur": "#1a2f5e"
+    },
+    {
+      "id": 1784970656280,
+      "Title": "F7",
+      "Code": "F7",
+      "Intitule": "BAC+3 en Management et Gestion des entreprises",
       "Niveau": "BAC+3",
       "Duree": 3,
       "Capacite": 30,
@@ -52,7 +66,7 @@
   "annonces": [],
   "paiements": null,
   "_meta": {
-    "lastUpdated": "2026-07-25T09:09:39.279Z",
+    "lastUpdated": "2026-07-25T09:10:56.280Z",
     "version": "v2.5.1"
   }
 }
