@@ -1,7 +1,22 @@
 {
   "etudiants": [],
   "professeurs": [],
-  "filieres": [],
+  "filieres": [
+    {
+      "id": 1784970448611,
+      "Title": "F1",
+      "Code": "F1",
+      "Intitule": "BAC+3 en Systèmes d'Information – Option Génie Logiciel",
+      "Niveau": "BAC+3",
+      "Duree": 3,
+      "Capacite": 30,
+      "Frais": 18000,
+      "Statut": "Active",
+      "Description": "",
+      "Responsable": "ZFZ",
+      "Couleur": "#1a2f5e"
+    }
+  ],
   "visiteurs": [],
   "notes": [],
   "presences": [],
@@ -9,8 +24,7 @@
   "annonces": [],
   "paiements": null,
   "_meta": {
-    "version": "2.7.0",
-    "lastUpdated": "2026-07-25",
-    "app": "ECOGEST"
+    "lastUpdated": "2026-07-25T09:07:28.611Z",
+    "version": "v2.5.1"
   }
 }
