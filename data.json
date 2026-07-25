@@ -1,0 +1,16 @@
+{
+  "etudiants": [],
+  "professeurs": [],
+  "filieres": [],
+  "visiteurs": [],
+  "notes": [],
+  "presences": [],
+  "cours": [],
+  "annonces": [],
+  "paiements": null,
+  "_meta": {
+    "version": "2.7.0",
+    "lastUpdated": "2026-07-25",
+    "app": "ECOGEST"
+  }
+}
