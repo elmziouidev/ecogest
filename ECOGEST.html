@@ -3574,7 +3574,7 @@ function calculerLignesBulletin(etudiant, notesEtudiantSemestre, semestre, cours
   );
   const tauxAbsencePriseEnCompte = filieresAvecTauxAbsence.includes(etudiant.filiere);
   let sommeNotesModules = 0, nbModulesNotes = 0;
-  const lignes = modulesDuSemestre.map((module) => {
+  const donneesModules = modulesDuSemestre.map((module) => {
     const notesModule = notesEtudiantSemestre.filter((n) => n.module === module.intitule);
     const ccNotes = notesModule.filter((n) => n.typeEvaluation === "Contr\xF4le continu").map((n) => n.note);
     const efmNote = notesModule.find((n) => n.typeEvaluation === "Examen de fin de module")?.note ?? null;
@@ -3587,15 +3587,19 @@ function calculerLignesBulletin(etudiant, notesEtudiantSemestre, semestre, cours
       const heuresManquees = (presencesEtudiantSemestre || []).filter((p) => p.module === module.intitule).reduce((s, p) => s + (SEANCE_DUREE[p.seance || p.heure] || 1.5), 0);
       tauxAbsence = module.heures > 0 ? Math.round(heuresManquees / module.heures * 100) : null;
     }
-    let decision = noteModule !== null ? noteModule >= 10 ? "Valid\xE9" : "Non valid\xE9" : "";
-    if (tauxAbsence !== null && tauxAbsence >= 25) decision = "Non valid\xE9";
     if (noteModule !== null) {
       sommeNotesModules += noteModule;
       nbModulesNotes++;
     }
-    return { module: module.intitule, moyenneCC, efmNote, noteModule, tauxAbsence, rattrapageNote, decision };
+    return { module: module.intitule, moyenneCC, efmNote, noteModule, tauxAbsence, rattrapageNote };
   });
   const moyenneSemestre = nbModulesNotes > 0 ? sommeNotesModules / nbModulesNotes : null;
+  const seuilValidation = moyenneSemestre !== null && moyenneSemestre >= 10 ? 6 : 10;
+  const lignes = donneesModules.map((d) => {
+    let decision = d.noteModule !== null ? d.noteModule >= seuilValidation ? "Valid\xE9" : "Non valid\xE9" : "";
+    if (d.tauxAbsence !== null && d.tauxAbsence >= 25) decision = "Non valid\xE9";
+    return { ...d, decision };
+  });
   return { lignes, moyenneSemestre, tauxAbsencePriseEnCompte };
 }
 function genererBulletinNotes(etudiant, notesEtudiantSemestre, semestre, anneeUniversitaire, coursListe, presencesEtudiantSemestre, filieresAvecTauxAbsence = []) {
