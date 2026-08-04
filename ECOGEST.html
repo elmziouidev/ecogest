@@ -5209,6 +5209,23 @@ function App() {
     }, 5 * 60 * 1e3);
     return () => clearInterval(intervalId);
   }, [user]);
+  const lastPageSyncRef = useRef(0);
+  const isFirstActiveRef = useRef(true);
+  const SYNC_MIN_INTERVAL_MS = 15 * 1e3;
+  useEffect(() => {
+    if (isFirstActiveRef.current) {
+      isFirstActiveRef.current = false;
+      return;
+    }
+    if (!user?.token) return;
+    const now = Date.now();
+    if (now - lastPageSyncRef.current < SYNC_MIN_INTERVAL_MS) return;
+    lastPageSyncRef.current = now;
+    setSpLoading(true);
+    loadAllFromSP(user.token).then((spData) => {
+      if (spData) setData(spData);
+    }).catch((err) => console.warn("Synchronisation \xE0 la navigation \xE9chou\xE9e:", err.message)).finally(() => setSpLoading(false));
+  }, [active]);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
@@ -5244,6 +5261,7 @@ function App() {
             } catch (e) {
               console.log("Token decode error:", e);
             }
+            lastPageSyncRef.current = Date.now();
             setSpLoading(true);
             setupSharePointLists(token).then(() => loadAllFromSP(token)).then((spData) => {
               if (spData) setData(spData);
@@ -5253,6 +5271,7 @@ function App() {
               setSpLoading(false);
             });
           } else {
+            lastPageSyncRef.current = Date.now();
             setSpLoading(true);
             setupSharePointLists(token).then(() => loadAllFromSP(token)).then((spData) => {
               const matched = (spData?.etudiants || []).find(
