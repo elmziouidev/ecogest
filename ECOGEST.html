@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ECOGEST v3.173.0 — École Supérieure de Rabat</title>
+  <title>ECOGEST v3.174.0 — École Supérieure de Rabat</title>
   <script src="./react.production.min.js"></script>
   <script src="./react-dom.production.min.js"></script>
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI',Roboto,Helvetica,Arial,sans-serif}#root{height:100vh}
@@ -5983,7 +5983,7 @@ const NAV_ITEMS = {
   parametrage: { label: "Param\xE9trage", icon: "\u{1F6E0}\uFE0F" },
   config: { label: "Config. SharePoint", icon: "\u2699\uFE0F" }
 };
-const APP_VERSION = "v3.173.0";
+const APP_VERSION = "v3.174.0";
 const APP_DATE = "04 Ao\xFBt 2026";
 const MSAL_CONFIG = {
   clientId: "0d52fee7-c6cf-4374-8063-395b2add8c91",
@@ -6286,7 +6286,7 @@ async function getColTypeMap(listName, token, siteId) {
   });
   return types;
 }
-async function deleteFromSP(list, spId, token) {
+async function deleteFromSPOnline(list, spId, token) {
   try {
     if (!token || !spId) {
       console.error("deleteFromSP: token ou ID manquant");
@@ -6311,7 +6311,7 @@ async function deleteFromSP(list, spId, token) {
     return false;
   }
 }
-async function saveToSP(list, fields, token, spId) {
+async function saveToSPOnline(list, fields, token, spId) {
   try {
     if (!token) {
       console.error("saveToSP: pas de token");
@@ -6391,6 +6391,125 @@ async function saveToSP(list, fields, token, spId) {
     return null;
   }
 }
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+//  MODE HORS LIGNE : cache local des donn\xE9es + file d'attente de synchronisation
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// Toute \xE9criture (saveToSP / deleteFromSP) passe d\xE9sormais par cette
+// couche : en ligne, elle se comporte exactement comme avant (aucun appelant
+// existant n'a besoin d'\xEAtre modifi\xE9). Hors ligne, elle met l'op\xE9ration en
+// file d'attente dans le navigateur et renvoie IMM\xC9DIATEMENT un r\xE9sultat
+// "optimiste" (avec un identifiant temporaire pour une cr\xE9ation), pour que
+// tout le code appelant continue de fonctionner sans savoir qu'il est hors ligne.
+const OFFLINE_QUEUE_KEY = "ecogest_offline_queue_v1";
+const OFFLINE_DATA_CACHE_KEY = "ecogest_data_cache_v1";
+function isBrowserOnline() {
+  return typeof navigator !== "undefined" ? navigator.onLine !== false : true;
+}
+function loadOfflineQueue() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+function persistOfflineQueue(queue) {
+  try {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch (e) {
+    console.error("Impossible d'enregistrer la file hors ligne:", e.message);
+  }
+  window.dispatchEvent(new CustomEvent("ecogest-queue-changed"));
+}
+function pushToOfflineQueue(item) {
+  const queue = loadOfflineQueue();
+  queue.push(item);
+  persistOfflineQueue(queue);
+}
+function genOfflineOpId() {
+  return `op-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+function saveDataCache(data) {
+  try {
+    localStorage.setItem(OFFLINE_DATA_CACHE_KEY, JSON.stringify({ data, savedAt: Date.now() }));
+  } catch (e) {
+    console.error("Impossible d'enregistrer le cache local:", e.message);
+  }
+}
+function loadDataCache() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_DATA_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.data ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+async function saveToSP(list, fields, token, spId) {
+  if (!isBrowserOnline()) {
+    const tempId = spId || `offline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    pushToOfflineQueue({ opId: genOfflineOpId(), type: "save", list, fields, spId: spId || null, tempId, timestamp: Date.now() });
+    console.log("\u{1F4E5} Hors ligne \u2014 mise en file d'attente:", list, tempId);
+    return { id: tempId, _offline: true };
+  }
+  return saveToSPOnline(list, fields, token, spId);
+}
+async function deleteFromSP(list, spId, token) {
+  if (!isBrowserOnline()) {
+    if (typeof spId === "string" && spId.startsWith("offline-")) {
+      const queue = loadOfflineQueue().filter((q) => q.tempId !== spId);
+      persistOfflineQueue(queue);
+      console.log("\u{1F5D1}\uFE0F Hors ligne \u2014 cr\xE9ation en attente annul\xE9e:", list, spId);
+      return true;
+    }
+    pushToOfflineQueue({ opId: genOfflineOpId(), type: "delete", list, spId, timestamp: Date.now() });
+    console.log("\u{1F4E5} Hors ligne \u2014 suppression mise en file d'attente:", list, spId);
+    return true;
+  }
+  return deleteFromSPOnline(list, spId, token);
+}
+function resolveSpId(spId, remap) {
+  if (!spId) return null;
+  return remap[spId] || spId;
+}
+async function flushOfflineQueue(token) {
+  const queue = loadOfflineQueue();
+  if (queue.length === 0) return { reussies: 0, echouees: 0, remap: {} };
+  const remap = {};
+  const restantes = [];
+  let reussies = 0, echouees = 0;
+  for (const item of queue) {
+    try {
+      if (item.type === "save") {
+        const spIdReel = resolveSpId(item.spId, remap);
+        const result = await saveToSPOnline(item.list, item.fields, token, spIdReel);
+        if (result && result.id) {
+          remap[item.tempId] = result.id;
+          reussies++;
+        } else {
+          restantes.push(item);
+          echouees++;
+        }
+      } else if (item.type === "delete") {
+        const spIdReel = resolveSpId(item.spId, remap);
+        const ok = await deleteFromSPOnline(item.list, spIdReel, token);
+        if (ok) reussies++;
+        else {
+          restantes.push(item);
+          echouees++;
+        }
+      }
+    } catch (e) {
+      restantes.push(item);
+      echouees++;
+    }
+  }
+  persistOfflineQueue(restantes);
+  return { reussies, echouees, remap };
+}
+
 const SP_LISTS_SCHEMA = {
   ECOGEST_Etudiants: ["Nom", "Prenom", "CIN", "DateNaissance", "LieuNaissance", "Genre", "Email", "EmailPersonnel", "Telephone", "Adresse", "Ville", "Quartier", "Filiere", "Niveau", "Annee", "Promotion", "Statut", "NumInscription", "ResponsableFinancier", "TarifGlobalFormation", "ModeReglement", "NotesConvention", "InscritPar", "BacAnnee", "BacMention", "BacSerie", "Etablissement", "Observations"],
   ECOGEST_Professeurs: ["Nom", "Prenom", "CIN", "Email", "Telephone", "Specialite", "Matiere", "Grade", "TypeContrat", "Statut"],
@@ -6881,10 +7000,59 @@ function App() {
   const [toastMsg, setToastMsg] = useState("");
   const [checking, setChecking] = useState(true);
   const [spLoading, setSpLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(isBrowserOnline());
+  const [pendingSyncCount, setPendingSyncCount] = useState(loadOfflineQueue().length);
+  const [syncingQueue, setSyncingQueue] = useState(false);
+  const cacheLoadedRef = useRef(false);
   const toast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 3e3);
   };
+  useEffect(() => {
+    const cached = loadDataCache();
+    if (cached && cached.data) {
+      setData(cached.data);
+      cacheLoadedRef.current = true;
+      console.log("\u{1F4E6} Donn\xE9es locales charg\xE9es depuis le cache (mode hors ligne pr\xEAt) \u2014", new Date(cached.savedAt).toLocaleString());
+    }
+  }, []);
+  useEffect(() => {
+    if (!cacheLoadedRef.current && (!data.etudiants || data.etudiants.length === 0)) return;
+    saveDataCache(data);
+  }, [data]);
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (userAuth?.token) {
+        setSyncingQueue(true);
+        flushOfflineQueue(userAuth.token).then((resultat) => {
+          setPendingSyncCount(loadOfflineQueue().length);
+          if (resultat.reussies > 0) {
+            toast(`\u{1F504} Connexion retrouv\xE9e \u2014 ${resultat.reussies} modification(s) synchronis\xE9e(s) avec SharePoint \u2713`);
+          }
+          if (resultat.echouees > 0) {
+            toast(`\u26A0\uFE0F ${resultat.echouees} modification(s) n'ont pas pu \xEAtre synchronis\xE9es \u2014 nouvel essai automatique bient\xF4t`);
+          }
+          return loadAllFromSP(userAuth.token);
+        }).then((spData) => {
+          if (spData) setData(spData);
+        }).catch((err) => console.warn("Synchronisation au retour de connexion \xE9chou\xE9e:", err.message)).finally(() => setSyncingQueue(false));
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast("\u{1F50C} Connexion perdue \u2014 l'application continue de fonctionner, vos modifications seront synchronis\xE9es automatiquement au retour d'internet");
+    };
+    const handleQueueChanged = () => setPendingSyncCount(loadOfflineQueue().length);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("ecogest-queue-changed", handleQueueChanged);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("ecogest-queue-changed", handleQueueChanged);
+    };
+  }, [userAuth]);
   useEffect(() => {
     if (roleAuth && active && NAV_ITEMS[active]) {
       document.title = `ECOGEST ${APP_VERSION} \u2014 ${NAV_ITEMS[active].label}`;
@@ -6925,6 +7093,7 @@ function App() {
   useEffect(() => {
     if (!userAuth?.token) return;
     const intervalId = setInterval(() => {
+      if (!isBrowserOnline()) return;
       loadAllFromSP(userAuth.token).then((spData) => {
         if (spData) setData(spData);
       }).catch((err) => console.warn("Rafra\xEEchissement automatique \xE9chou\xE9:", err.message));
@@ -6939,7 +7108,7 @@ function App() {
       isFirstActiveRef.current = false;
       return;
     }
-    if (!userAuth?.token) return;
+    if (!userAuth?.token || !isBrowserOnline()) return;
     const now = Date.now();
     if (now - lastPageSyncRef.current < SYNC_MIN_INTERVAL_MS) return;
     lastPageSyncRef.current = now;
@@ -7214,7 +7383,7 @@ Contactez l'administrateur : i.elmzioui@esrmi.ma`);
       candidatsProfs.length > 0 && /* @__PURE__ */ React.createElement("div", { key: "pr", style: { fontSize: 10.5, fontWeight: 800, color: C.teal, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 8 } }, "Professeurs"),
       ...candidatsProfs.map((p) => /* @__PURE__ */ React.createElement("button", { key: "p" + p.id, onClick: () => choisir(p, "professeur"), style: { display: "flex", alignItems: "center", gap: 8, textAlign: "left", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 8, background: "white", cursor: "pointer", fontFamily: "inherit" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u{1F468}\u200D\u{1F3EB}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, fontWeight: 700, color: "#232733" } }, p.prenom, " ", p.nom), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: C.muted } }, p.email))))
     ];
-  })())), spLoading && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 24, left: 24, background: C.navy, color: "white", padding: "10px 18px", borderRadius: 11, fontSize: 13, fontWeight: 500, zIndex: 2e3, display: "flex", alignItems: "center", gap: 10, boxShadow: C.shadowLg } }, /* @__PURE__ */ React.createElement("div", { style: { width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin 0.8s linear infinite" } }), "Chargement des donn\xE9es SharePoint..."), /* @__PURE__ */ React.createElement("style", null, `@keyframes spin{to{transform:rotate(360deg)}}`));
+  })())), spLoading && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: 24, left: 24, background: C.navy, color: "white", padding: "10px 18px", borderRadius: 11, fontSize: 13, fontWeight: 500, zIndex: 2e3, display: "flex", alignItems: "center", gap: 10, boxShadow: C.shadowLg } }, /* @__PURE__ */ React.createElement("div", { style: { width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin 0.8s linear infinite" } }), "Chargement des donn\xE9es SharePoint..."), roleAuth && (!isOnline || pendingSyncCount > 0) && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", bottom: spLoading ? 74 : 24, left: 24, background: !isOnline ? "#c0392b" : "#e56b2d", color: "white", padding: "10px 18px", borderRadius: 11, fontSize: 13, fontWeight: 600, zIndex: 2e3, display: "flex", alignItems: "center", gap: 10, boxShadow: C.shadowLg, maxWidth: 340 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, !isOnline ? "\u{1F50C}" : syncingQueue ? "\u{1F504}" : "\u23F3"), /* @__PURE__ */ React.createElement("span", null, !isOnline ? `Hors ligne \u2014 vos modifications sont enregistr\xE9es et seront synchronis\xE9es au retour de la connexion${pendingSyncCount > 0 ? ` (${pendingSyncCount} en attente)` : ""}` : syncingQueue ? "Synchronisation en cours..." : `${pendingSyncCount} modification(s) en attente de synchronisation`)), /* @__PURE__ */ React.createElement("style", null, `@keyframes spin{to{transform:rotate(360deg)}}`));
 }
 </script>
   <script>
