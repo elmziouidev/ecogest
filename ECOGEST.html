@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ECOGEST v3.172.0 — École Supérieure de Rabat</title>
+  <title>ECOGEST v3.173.0 — École Supérieure de Rabat</title>
   <script src="./react.production.min.js"></script>
   <script src="./react-dom.production.min.js"></script>
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI',Roboto,Helvetica,Arial,sans-serif}#root{height:100vh}
@@ -944,7 +944,7 @@ function Professeurs({ data, setData, role, user, toast }) {
   ];
   const professeursFiltres = (data.professeurs || []).filter(
     (p) => !search || `${p.nom || ""} ${p.prenom || ""} ${p.cin || ""} ${p.email || ""}`.toLowerCase().includes(search.toLowerCase())
-  );
+  ).sort((a, b) => (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" }) || (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }));
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     PageHeader,
     {
@@ -1353,7 +1353,7 @@ function Presences({ data, setData, role, user, toast }) {
   const presents = mesPresences.filter((p) => p.statut === "Pr\xE9sent").length;
   const absentsCount = mesPresences.filter((p) => p.statut === "Absent").length;
   const justifie = mesPresences.filter((p) => p.statut === "Justifi\xE9").length;
-  const professeursRecordsTous = [...(data.professeurs || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }) || (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" }));
+  const professeursRecordsTous = [...(data.professeurs || [])].sort((a, b) => `${a.prenom || ""} ${a.nom || ""}`.trim().localeCompare(`${b.prenom || ""} ${b.nom || ""}`.trim(), "fr", { sensitivity: "base" }));
   const professeursRecords = role === "professeur" && monProfesseur ? [monProfesseur] : professeursRecordsTous;
   const semestresOptions = [.../* @__PURE__ */ new Set([...SEMESTRES_MODULE_SEED, ...(data.cours || []).map((c) => c.semestre).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
   const modulesOptions = (data.cours || []).filter(
@@ -1752,7 +1752,7 @@ function Cours({ data, setData, role, user, toast }) {
   const departements = optionsFor("departement", DEPARTEMENTS_SEED);
   const responsables = optionsFor("responsablePedagogique", RESPONSABLES_PEDAGOGIQUES_SEED);
   const semestres = optionsFor("semestre", SEMESTRES_MODULE_SEED);
-  const professeursRecords = [...(data.professeurs || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }) || (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" }));
+  const professeursRecords = [...(data.professeurs || [])].sort((a, b) => `${a.prenom || ""} ${a.nom || ""}`.trim().localeCompare(`${b.prenom || ""} ${b.nom || ""}`.trim(), "fr", { sensitivity: "base" }));
   const filieresOptions = getFilieres(data);
   const openAdd = () => {
     setEditItem(null);
@@ -5983,7 +5983,7 @@ const NAV_ITEMS = {
   parametrage: { label: "Param\xE9trage", icon: "\u{1F6E0}\uFE0F" },
   config: { label: "Config. SharePoint", icon: "\u2699\uFE0F" }
 };
-const APP_VERSION = "v3.172.0";
+const APP_VERSION = "v3.173.0";
 const APP_DATE = "04 Ao\xFBt 2026";
 const MSAL_CONFIG = {
   clientId: "0d52fee7-c6cf-4374-8063-395b2add8c91",
