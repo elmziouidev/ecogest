@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ECOGEST v3.171.0 — École Supérieure de Rabat</title>
+  <title>ECOGEST v3.172.0 — École Supérieure de Rabat</title>
   <script src="./react.production.min.js"></script>
   <script src="./react-dom.production.min.js"></script>
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI Variable','Segoe UI',Roboto,Helvetica,Arial,sans-serif}#root{height:100vh}
@@ -977,11 +977,10 @@ function Notes({ data, setData, role, user, toast }) {
     (e) => user?.numInscription && e.numInscription === user.numInscription || user?.etudiantId && e.etudiantId === user.etudiantId
   );
   const monProfesseur = (data.professeurs || []).find((p) => p.email && user?.email && p.email.toLowerCase() === user.email.toLowerCase());
-  const identiteProf = monProfesseur ? `${monProfesseur.nom || ""} ${monProfesseur.prenom || ""} (CIN: ${monProfesseur.cin || "\u2014"})`.replace(/\s+/g, " ").trim() : null;
-  const mesNotes = role === "etudiant" ? (data.notes || []).filter((n) => user?.numInscription && n.numInscription === user.numInscription || user?.etudiantId && n.etudiantId === user.etudiantId) : role === "professeur" ? (data.notes || []).filter((n) => n.enseignant === identiteProf) : data.notes || [];
+  const mesNotes = role === "etudiant" ? (data.notes || []).filter((n) => user?.numInscription && n.numInscription === user.numInscription || user?.etudiantId && n.etudiantId === user.etudiantId) : role === "professeur" ? (data.notes || []).filter((n) => n.enseignantCin === monProfesseur?.cin) : data.notes || [];
   const filieresOptions = getFilieres(data);
   const semestresOptions = [.../* @__PURE__ */ new Set([...SEMESTRES_MODULE_SEED, ...(data.cours || []).map((c) => c.semestre).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr", { numeric: true, sensitivity: "base" }));
-  const modulesOptions = (data.cours || []).filter((c) => (role === "professeur" ? c.professeur === identiteProf : true) && (!form.filiere || (c.filieresListe || [c.filiere]).includes(form.filiere)) && (!form.semestre || c.semestre === form.semestre));
+  const modulesOptions = (data.cours || []).filter((c) => (role === "professeur" ? c.professeurCin === monProfesseur?.cin : true) && (!form.filiere || (c.filieresListe || [c.filiere]).includes(form.filiere)) && (!form.semestre || c.semestre === form.semestre));
   const moduleChoisi = (data.cours || []).find((c) => c.intitule === form.module);
   const semestreInfoForm = (data.semestresDates || []).find((s) => s.semestre === form.semestre);
   const etudiantsFiliere = form.filiere ? (data.etudiants || []).filter((e) => e.filiere === form.filiere) : [];
@@ -1061,7 +1060,8 @@ function Notes({ data, setData, role, user, toast }) {
         TypeEvaluation: form.typeEvaluation || "",
         Note: String(parseFloat(valeur)),
         DateEvaluation: form.date || "",
-        Enseignant: moduleChoisi?.professeur || ""
+        Enseignant: moduleChoisi?.professeur || "",
+        EnseignantCIN: moduleChoisi?.professeurCin || ""
       };
       const existant = notesIdsEdition[etId];
       if (existant) {
@@ -1081,7 +1081,8 @@ function Notes({ data, setData, role, user, toast }) {
           typeEvaluation: form.typeEvaluation,
           note: parseFloat(valeur),
           date: form.date,
-          enseignant: moduleChoisi?.professeur || ""
+          enseignant: moduleChoisi?.professeur || "",
+          enseignantCin: moduleChoisi?.professeurCin || ""
         });
       }
     }
@@ -1298,7 +1299,7 @@ function Presences({ data, setData, role, user, toast }) {
   const canEdit = ["administrateur", "professeur"].includes(role);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const emptyForm = { date: today(), professeur: "", module: "", seance: "", filiere: "", semestre: "" };
+  const emptyForm = { date: today(), professeur: "", professeurCin: "", module: "", seance: "", filiere: "", semestre: "" };
   const [form, setForm] = useState(emptyForm);
   const [absents, setAbsents] = useState({});
   const [expandedNodes, setExpandedNodes] = useState({});
@@ -1314,8 +1315,7 @@ function Presences({ data, setData, role, user, toast }) {
   const [filtreDateDebut, setFiltreDateDebut] = useState("");
   const [filtreDateFin, setFiltreDateFin] = useState("");
   const monProfesseur = (data.professeurs || []).find((p) => p.email && user?.email && p.email.toLowerCase() === user.email.toLowerCase());
-  const identiteProf = monProfesseur ? `${monProfesseur.nom || ""} ${monProfesseur.prenom || ""} (CIN: ${monProfesseur.cin || "\u2014"})`.replace(/\s+/g, " ").trim() : null;
-  const mesPresences = role === "etudiant" ? (data.presences || []).filter((p) => user?.numInscription && p.numInscription === user.numInscription || user?.etudiantId && p.etudiantId === user.etudiantId) : role === "professeur" ? (data.presences || []).filter((p) => p.enseignant === identiteProf) : data.presences || [];
+  const mesPresences = role === "etudiant" ? (data.presences || []).filter((p) => user?.numInscription && p.numInscription === user.numInscription || user?.etudiantId && p.etudiantId === user.etudiantId) : role === "professeur" ? (data.presences || []).filter((p) => p.enseignantCin === monProfesseur?.cin) : data.presences || [];
   const monEtudiant = (data.etudiants || []).find(
     (e) => user?.numInscription && e.numInscription === user.numInscription || user?.etudiantId && e.etudiantId === user.etudiantId
   );
@@ -1353,11 +1353,11 @@ function Presences({ data, setData, role, user, toast }) {
   const presents = mesPresences.filter((p) => p.statut === "Pr\xE9sent").length;
   const absentsCount = mesPresences.filter((p) => p.statut === "Absent").length;
   const justifie = mesPresences.filter((p) => p.statut === "Justifi\xE9").length;
-  const professeursOptionsTous = [...(data.professeurs || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }) || (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" })).map((p) => `${p.nom || ""} ${p.prenom || ""} (CIN: ${p.cin || "\u2014"})`.replace(/\s+/g, " ").trim());
-  const professeursOptions = role === "professeur" && identiteProf ? [identiteProf] : professeursOptionsTous;
+  const professeursRecordsTous = [...(data.professeurs || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }) || (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" }));
+  const professeursRecords = role === "professeur" && monProfesseur ? [monProfesseur] : professeursRecordsTous;
   const semestresOptions = [.../* @__PURE__ */ new Set([...SEMESTRES_MODULE_SEED, ...(data.cours || []).map((c) => c.semestre).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
   const modulesOptions = (data.cours || []).filter(
-    (c) => (role === "professeur" ? c.professeur === identiteProf : !form.professeur || c.professeur === form.professeur) && (!form.filiere || (c.filieresListe || [c.filiere]).includes(form.filiere)) && (!form.semestre || c.semestre === form.semestre)
+    (c) => (role === "professeur" ? c.professeurCin === monProfesseur?.cin : !form.professeurCin || c.professeurCin === form.professeurCin) && (!form.filiere || (c.filieresListe || [c.filiere]).includes(form.filiere)) && (!form.semestre || c.semestre === form.semestre)
   );
   const semestreInfoForm = (data.semestresDates || []).find((s) => s.semestre === form.semestre);
   const filieresOptions = getFilieres(data);
@@ -1382,7 +1382,7 @@ function Presences({ data, setData, role, user, toast }) {
     genererFichePresenceHebdo(filiereObj, etudiantsGroupe, lundiDeLaSemaine(ficheSemaine), ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]);
   };
   const openAdd = () => {
-    setForm({ ...emptyForm, professeur: role === "professeur" && identiteProf ? identiteProf : "" });
+    setForm({ ...emptyForm, professeur: role === "professeur" && monProfesseur ? `${monProfesseur.prenom} ${monProfesseur.nom}` : "", professeurCin: role === "professeur" && monProfesseur ? monProfesseur.cin || "" : "" });
     setAbsents({});
     setShowModal(true);
   };
@@ -1410,6 +1410,7 @@ function Presences({ data, setData, role, user, toast }) {
         Heure: form.seance || "",
         Statut: "Absent",
         Enseignant: form.professeur || "",
+        EnseignantCIN: form.professeurCin || "",
         Filiere: form.filiere || "",
         Seance: form.seance || "",
         Semestre: form.semestre || ""
@@ -1430,6 +1431,7 @@ function Presences({ data, setData, role, user, toast }) {
         heure: form.seance,
         statut: "Absent",
         enseignant: form.professeur,
+        enseignantCin: form.professeurCin,
         filiere: form.filiere,
         seance: form.seance,
         semestre: form.semestre
@@ -1541,7 +1543,7 @@ function Presences({ data, setData, role, user, toast }) {
     const filieresOptionsListe = getFilieres(data);
     const semestresOptionsListe = [...new Set((data.presences || []).map((p) => p.semestre).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { numeric: true, sensitivity: "base" }));
     const modulesOptionsListe = [...new Set((data.presences || []).map((p) => p.module).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
-    const professeursOptionsListe = [...new Set((data.presences || []).map((p) => p.enseignant).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
+    const professeursOptionsListe = [...new Map((data.presences || []).filter((p) => p.enseignantCin).map((p) => [p.enseignantCin, p.enseignant])).entries()];
     return /* @__PURE__ */ React.createElement(Card, { style: { padding: 16, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 } }, /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -1550,7 +1552,7 @@ function Presences({ data, setData, role, user, toast }) {
         onChange: (e) => setFiltreRecherche(e.target.value),
         style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit" }
       }
-    ), /* @__PURE__ */ React.createElement("select", { value: filtreFiliereListe, onChange: (e) => setFiltreFiliereListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les groupes --"), filieresOptionsListe.map((f) => /* @__PURE__ */ React.createElement("option", { key: f, value: f }, f))), /* @__PURE__ */ React.createElement("select", { value: filtreSemestreListe, onChange: (e) => setFiltreSemestreListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les semestres --"), semestresOptionsListe.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s))), /* @__PURE__ */ React.createElement("select", { value: filtreModuleListe, onChange: (e) => setFiltreModuleListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les modules --"), modulesOptionsListe.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))), /* @__PURE__ */ React.createElement("select", { value: filtreProfesseurListe, onChange: (e) => setFiltreProfesseurListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les professeurs --"), professeursOptionsListe.map((p) => /* @__PURE__ */ React.createElement("option", { key: p, value: p }, p))), /* @__PURE__ */ React.createElement("select", { value: filtreStatutListe, onChange: (e) => setFiltreStatutListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les statuts --"), /* @__PURE__ */ React.createElement("option", { value: "Absent" }, "Non justifi\xE9es"), /* @__PURE__ */ React.createElement("option", { value: "Justifi\xE9" }, "Justifi\xE9es")), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("select", { value: filtreFiliereListe, onChange: (e) => setFiltreFiliereListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les groupes --"), filieresOptionsListe.map((f) => /* @__PURE__ */ React.createElement("option", { key: f, value: f }, f))), /* @__PURE__ */ React.createElement("select", { value: filtreSemestreListe, onChange: (e) => setFiltreSemestreListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les semestres --"), semestresOptionsListe.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s))), /* @__PURE__ */ React.createElement("select", { value: filtreModuleListe, onChange: (e) => setFiltreModuleListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les modules --"), modulesOptionsListe.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))), /* @__PURE__ */ React.createElement("select", { value: filtreProfesseurListe, onChange: (e) => setFiltreProfesseurListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les professeurs --"), professeursOptionsListe.map(([cin, nom]) => /* @__PURE__ */ React.createElement("option", { key: cin, value: cin }, nom))), /* @__PURE__ */ React.createElement("select", { value: filtreStatutListe, onChange: (e) => setFiltreStatutListe(e.target.value), style: { padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.white } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Tous les statuts --"), /* @__PURE__ */ React.createElement("option", { value: "Absent" }, "Non justifi\xE9es"), /* @__PURE__ */ React.createElement("option", { value: "Justifi\xE9" }, "Justifi\xE9es")), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "date",
@@ -1575,7 +1577,7 @@ function Presences({ data, setData, role, user, toast }) {
       const matchFiliere = !filtreFiliereListe || p.filiere === filtreFiliereListe;
       const matchSemestre = !filtreSemestreListe || p.semestre === filtreSemestreListe;
       const matchModule = !filtreModuleListe || p.module === filtreModuleListe;
-      const matchProfesseur = !filtreProfesseurListe || p.enseignant === filtreProfesseurListe;
+      const matchProfesseur = !filtreProfesseurListe || p.enseignantCin === filtreProfesseurListe;
       const matchStatut = !filtreStatutListe || p.statut === filtreStatutListe;
       const matchDebut = !filtreDateDebut || (p.date || "") >= filtreDateDebut;
       const matchFin = !filtreDateFin || (p.date || "") <= filtreDateFin;
@@ -1661,13 +1663,16 @@ function Presences({ data, setData, role, user, toast }) {
         borderBottom: derniereLigneFilierePresId[row.id] ? `2.5px solid ${C.navy}` : `1px solid ${C.border}`
       })
     }));
-  })(), showModal && /* @__PURE__ */ React.createElement(Modal, { title: "Enregistrer des absences \u2192 SharePoint", onClose: () => setShowModal(false), width: 640 }, /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "Date de l'absence *", type: "date", value: form.date, min: semestreInfoForm?.dateDebut || void 0, max: semestreInfoForm?.dateFin || void 0, onChange: (e) => setForm((f) => ({ ...f, date: e.target.value })) }), /* @__PURE__ */ React.createElement(Sel, { label: "Professeur * (liste \u2014 page Professeurs)", value: form.professeur, onChange: (e) => setForm((f) => ({ ...f, professeur: e.target.value, module: "" })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, professeursOptions.length ? "-- S\xE9lectionner --" : "-- Aucun professeur enregistr\xE9 (page Professeurs) --"), professeursOptions.map((p) => /* @__PURE__ */ React.createElement("option", { key: p, value: p }, p)))), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Sel, { label: "Fili\xE8re *", value: form.filiere, onChange: (e) => {
+  })(), showModal && /* @__PURE__ */ React.createElement(Modal, { title: "Enregistrer des absences \u2192 SharePoint", onClose: () => setShowModal(false), width: 640 }, /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Input, { label: "Date de l'absence *", type: "date", value: form.date, min: semestreInfoForm?.dateDebut || void 0, max: semestreInfoForm?.dateFin || void 0, onChange: (e) => setForm((f) => ({ ...f, date: e.target.value })) }), /* @__PURE__ */ React.createElement(Sel, { label: "Professeur * (liste \u2014 page Professeurs)", value: form.professeurCin, onChange: (e) => {
+    const p = professeursRecords.find((pr) => pr.cin === e.target.value);
+    setForm((f) => ({ ...f, professeurCin: e.target.value, professeur: p ? `${p.prenom} ${p.nom}` : "", module: "" }));
+  } }, /* @__PURE__ */ React.createElement("option", { value: "" }, professeursRecords.length ? "-- S\xE9lectionner --" : "-- Aucun professeur enregistr\xE9 (page Professeurs) --"), professeursRecords.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.cin || p.id, value: p.cin }, `${p.prenom} ${p.nom} \u2014 CIN ${p.cin || "non renseign\xE9"}`)))), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Sel, { label: "Fili\xE8re *", value: form.filiere, onChange: (e) => {
     setForm((f) => ({ ...f, filiere: e.target.value, module: "" }));
     setAbsents({});
   } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), filieresOptions.map((f) => /* @__PURE__ */ React.createElement("option", { key: f, value: f }, f))), /* @__PURE__ */ React.createElement(Sel, { label: "Semestre *", value: form.semestre, onChange: (e) => {
     const sInfo = (data.semestresDates || []).find((s) => s.semestre === e.target.value);
     setForm((f) => ({ ...f, semestre: e.target.value, module: "", date: sInfo?.dateDebut || f.date }));
-  } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), semestresOptions.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s)))), semestreInfoForm && (semestreInfoForm.dateDebut || semestreInfoForm.dateFin) && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: -10, marginBottom: 13 } }, "\u{1F4C5} P\xE9riode du semestre (Param\xE9trage) : ", formatDateFR(semestreInfoForm.dateDebut) || "\u2014", " \u2192 ", formatDateFR(semestreInfoForm.dateFin) || "\u2014"), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Sel, { label: "Module *", value: form.module, onChange: (e) => setForm((f) => ({ ...f, module: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), modulesOptions.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.intitule }, c.intitule))), /* @__PURE__ */ React.createElement(Sel, { label: "S\xE9ance *", value: form.seance, onChange: (e) => setForm((f) => ({ ...f, seance: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), SEANCES_HORAIRE.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s)))), form.filiere && form.semestre && modulesOptions.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "#fff8e6", border: "1px solid #f0d078", borderRadius: 8, padding: "9px 13px", fontSize: 12, color: "#7a5c00", marginBottom: 13 } }, "\u26A0\uFE0F Aucun module trouv\xE9 pour cette fili\xE8re et ce semestre dans la page Modules."), form.filiere && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: C.red, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 } }, "Cochez les \xE9tudiants absents (", etudiantsFiliere.length, " \xE9tudiant(s) dans ce groupe", nbCoches > 0 ? ` \u2014 ${nbCoches} coch\xE9(s)` : "", ")"), etudiantsFiliere.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 16, color: C.muted, fontSize: 12.5, border: `1px solid ${C.border}`, borderRadius: 8 } }, "Aucun \xE9tudiant dans ce groupe") : /* @__PURE__ */ React.createElement("div", { style: { border: `1px solid ${C.border}`, borderRadius: 10, maxHeight: 260, overflowY: "auto" } }, etudiantsFiliere.map((et, i) => /* @__PURE__ */ React.createElement("label", { key: et.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderBottom: i < etudiantsFiliere.length - 1 ? `1px solid ${C.light}` : "none", background: absents[et.id] ? "#fdeeec" : i % 2 === 0 ? C.white : C.light, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: !!absents[et.id], onChange: () => toggleAbsent(et.id), style: { width: 16, height: 16, cursor: "pointer" } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: absents[et.id] ? C.red : "#232733" } }, et.prenom, " ", et.nom), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted, marginLeft: "auto" } }, et.numInscription))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowModal(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleSave, disabled: !form.date || !form.professeur || !form.module || !form.seance || !form.filiere || !form.semestre || nbCoches === 0 || saving }, saving ? "Enregistrement..." : `Enregistrer ${nbCoches > 0 ? `(${nbCoches})` : ""} \u2192 SharePoint`))), showJustif && /* @__PURE__ */ React.createElement(Modal, { title: `Justification de l'absence \u2014 ${showJustif.etudiant}`, onClose: () => setShowJustif(null) }, /* @__PURE__ */ React.createElement("div", { style: { background: C.light, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", fontSize: 12.5, color: "#444", marginBottom: 16, lineHeight: 1.7 } }, /* @__PURE__ */ React.createElement("strong", null, showJustif.etudiant), " \xB7 ", showJustif.filiere || "\u2014", /* @__PURE__ */ React.createElement("br", null), formatDateFR(showJustif.date), " \xB7 ", showJustif.module || "\u2014", " \xB7 ", showJustif.seance || showJustif.heure || "\u2014"), /* @__PURE__ */ React.createElement(Sel, { label: "Statut *", value: justifForm.statut, onChange: (e) => setJustifForm((f) => ({ ...f, statut: e.target.value })) }, /* @__PURE__ */ React.createElement("option", null, "Absent"), /* @__PURE__ */ React.createElement("option", null, "Justifi\xE9")), justifForm.statut === "Justifi\xE9" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(CreatableSelect, { label: "Document de justification", value: justifForm.documentJustification, onChange: (v) => setJustifForm((f) => ({ ...f, documentJustification: v })), options: ["Certificat m\xE9dical", "Convocation administrative", "Certificat de d\xE9c\xE8s", "Attestation de d\xE9placement"] }), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(CreatableSelect, { label: "Justifi\xE9 par", value: justifForm.justifiePar, onChange: (v) => setJustifForm((f) => ({ ...f, justifiePar: v })), options: ["P\xE8re", "M\xE8re", "Lui m\xEAme"] }), /* @__PURE__ */ React.createElement(Input, { label: "Date de justification", type: "date", value: justifForm.dateJustification, onChange: (e) => setJustifForm((f) => ({ ...f, dateJustification: e.target.value })) }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" } }, justifForm.statut === "Justifi\xE9" ? /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => genererBilletEntree({ ...showJustif, ...justifForm }) }, "\u{1F5A8}\uFE0F Imprimer un billet d'entr\xE9e") : /* @__PURE__ */ React.createElement("span", null), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowJustif(null) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleSaveJustif }, "Enregistrer \u2192 SharePoint")))));
+  } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), semestresOptions.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s)))), semestreInfoForm && (semestreInfoForm.dateDebut || semestreInfoForm.dateFin) && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: -10, marginBottom: 13 } }, "\u{1F4C5} P\xE9riode du semestre (Param\xE9trage) : ", formatDateFR(semestreInfoForm.dateDebut) || "\u2014", " \u2192 ", formatDateFR(semestreInfoForm.dateFin) || "\u2014"), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Sel, { label: "Module *", value: form.module, onChange: (e) => setForm((f) => ({ ...f, module: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), modulesOptions.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.intitule }, c.intitule))), /* @__PURE__ */ React.createElement(Sel, { label: "S\xE9ance *", value: form.seance, onChange: (e) => setForm((f) => ({ ...f, seance: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- S\xE9lectionner --"), SEANCES_HORAIRE.map((s) => /* @__PURE__ */ React.createElement("option", { key: s }, s)))), form.filiere && form.semestre && modulesOptions.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "#fff8e6", border: "1px solid #f0d078", borderRadius: 8, padding: "9px 13px", fontSize: 12, color: "#7a5c00", marginBottom: 13 } }, "\u26A0\uFE0F Aucun module trouv\xE9 pour cette fili\xE8re et ce semestre dans la page Modules."), form.filiere && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: C.red, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 } }, "Cochez les \xE9tudiants absents (", etudiantsFiliere.length, " \xE9tudiant(s) dans ce groupe", nbCoches > 0 ? ` \u2014 ${nbCoches} coch\xE9(s)` : "", ")"), etudiantsFiliere.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: 16, color: C.muted, fontSize: 12.5, border: `1px solid ${C.border}`, borderRadius: 8 } }, "Aucun \xE9tudiant dans ce groupe") : /* @__PURE__ */ React.createElement("div", { style: { border: `1px solid ${C.border}`, borderRadius: 10, maxHeight: 260, overflowY: "auto" } }, etudiantsFiliere.map((et, i) => /* @__PURE__ */ React.createElement("label", { key: et.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderBottom: i < etudiantsFiliere.length - 1 ? `1px solid ${C.light}` : "none", background: absents[et.id] ? "#fdeeec" : i % 2 === 0 ? C.white : C.light, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: !!absents[et.id], onChange: () => toggleAbsent(et.id), style: { width: 16, height: 16, cursor: "pointer" } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: absents[et.id] ? C.red : "#232733" } }, et.prenom, " ", et.nom), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted, marginLeft: "auto" } }, et.numInscription))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowModal(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleSave, disabled: !form.date || !form.professeurCin || !form.module || !form.seance || !form.filiere || !form.semestre || nbCoches === 0 || saving }, saving ? "Enregistrement..." : `Enregistrer ${nbCoches > 0 ? `(${nbCoches})` : ""} \u2192 SharePoint`))), showJustif && /* @__PURE__ */ React.createElement(Modal, { title: `Justification de l'absence \u2014 ${showJustif.etudiant}`, onClose: () => setShowJustif(null) }, /* @__PURE__ */ React.createElement("div", { style: { background: C.light, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", fontSize: 12.5, color: "#444", marginBottom: 16, lineHeight: 1.7 } }, /* @__PURE__ */ React.createElement("strong", null, showJustif.etudiant), " \xB7 ", showJustif.filiere || "\u2014", /* @__PURE__ */ React.createElement("br", null), formatDateFR(showJustif.date), " \xB7 ", showJustif.module || "\u2014", " \xB7 ", showJustif.seance || showJustif.heure || "\u2014"), /* @__PURE__ */ React.createElement(Sel, { label: "Statut *", value: justifForm.statut, onChange: (e) => setJustifForm((f) => ({ ...f, statut: e.target.value })) }, /* @__PURE__ */ React.createElement("option", null, "Absent"), /* @__PURE__ */ React.createElement("option", null, "Justifi\xE9")), justifForm.statut === "Justifi\xE9" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(CreatableSelect, { label: "Document de justification", value: justifForm.documentJustification, onChange: (v) => setJustifForm((f) => ({ ...f, documentJustification: v })), options: ["Certificat m\xE9dical", "Convocation administrative", "Certificat de d\xE9c\xE8s", "Attestation de d\xE9placement"] }), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(CreatableSelect, { label: "Justifi\xE9 par", value: justifForm.justifiePar, onChange: (v) => setJustifForm((f) => ({ ...f, justifiePar: v })), options: ["P\xE8re", "M\xE8re", "Lui m\xEAme"] }), /* @__PURE__ */ React.createElement(Input, { label: "Date de justification", type: "date", value: justifForm.dateJustification, onChange: (e) => setJustifForm((f) => ({ ...f, dateJustification: e.target.value })) }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" } }, justifForm.statut === "Justifi\xE9" ? /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => genererBilletEntree({ ...showJustif, ...justifForm }) }, "\u{1F5A8}\uFE0F Imprimer un billet d'entr\xE9e") : /* @__PURE__ */ React.createElement("span", null), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowJustif(null) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleSaveJustif }, "Enregistrer \u2192 SharePoint")))));
 }
 function CreatableSelect({ label, value, onChange, options }) {
   const [adding, setAdding] = useState(false);
@@ -1738,7 +1743,7 @@ function Cours({ data, setData, role, user, toast }) {
   const [filterFiliere, setFilterFiliere] = useState("");
   const [filterSemestre, setFilterSemestre] = useState("");
   const [search, setSearch] = useState("");
-  const emptyForm = { intitule: "", departement: "", responsablePedagogique: "", semestre: "", filieres: [], professeur: "", heures: "", salle: "" };
+  const emptyForm = { intitule: "", departement: "", responsablePedagogique: "", semestre: "", filieres: [], professeur: "", professeurCin: "", heures: "", salle: "" };
   const [form, setForm] = useState(emptyForm);
   const optionsFor = (field, seed) => {
     const used = [...new Set((data.cours || []).map((c) => c[field]).filter(Boolean))];
@@ -1747,7 +1752,7 @@ function Cours({ data, setData, role, user, toast }) {
   const departements = optionsFor("departement", DEPARTEMENTS_SEED);
   const responsables = optionsFor("responsablePedagogique", RESPONSABLES_PEDAGOGIQUES_SEED);
   const semestres = optionsFor("semestre", SEMESTRES_MODULE_SEED);
-  const professeursOptions = [...(data.professeurs || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }) || (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" })).map((p) => `${p.nom || ""} ${p.prenom || ""} (CIN: ${p.cin || "\u2014"})`.replace(/\s+/g, " ").trim());
+  const professeursRecords = [...(data.professeurs || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || "", "fr", { sensitivity: "base" }) || (a.prenom || "").localeCompare(b.prenom || "", "fr", { sensitivity: "base" }));
   const filieresOptions = getFilieres(data);
   const openAdd = () => {
     setEditItem(null);
@@ -1756,10 +1761,10 @@ function Cours({ data, setData, role, user, toast }) {
   };
   const openEdit = (c) => {
     setEditItem(c);
-    setForm({ ...c, heures: String(c.heures || ""), filieres: c.filieresListe || (c.filiere ? [c.filiere] : []) });
+    setForm({ ...c, heures: String(c.heures || ""), filieres: c.filieresListe || (c.filiere ? [c.filiere] : []), professeurCin: c.professeurCin || "" });
     setShowModal(true);
   };
-  const spFields = (f) => ({ Title: f.intitule || "", Intitule: f.intitule || "", Departement: f.departement || "", ResponsablePedagogique: f.responsablePedagogique || "", Semestre: f.semestre || "", Filiere: (f.filieres || []).join(" | "), Professeur: f.professeur || "", HeuresTotal: String(parseInt(f.heures) || 0), Salle: f.salle || "" });
+  const spFields = (f) => ({ Title: f.intitule || "", Intitule: f.intitule || "", Departement: f.departement || "", ResponsablePedagogique: f.responsablePedagogique || "", Semestre: f.semestre || "", Filiere: (f.filieres || []).join(" | "), Professeur: f.professeur || "", ProfesseurCIN: f.professeurCin || "", HeuresTotal: String(parseInt(f.heures) || 0), Salle: f.salle || "" });
   const handleSave = () => {
     if (!user?.token) {
       toast("\u26A0\uFE0F Non connect\xE9 \xE0 SharePoint \u2014 module non enregistr\xE9");
@@ -1894,7 +1899,10 @@ function Cours({ data, setData, role, user, toast }) {
       onChange: () => setForm((fm) => ({ ...fm, filieres: (fm.filieres || []).includes(f) ? fm.filieres.filter((x) => x !== f) : [...fm.filieres || [], f] })),
       style: { width: 15, height: 15, cursor: "pointer" }
     }
-  ), f)))), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Sel, { label: "Professeur * (liste \u2014 page Professeurs)", value: form.professeur, onChange: (e) => setForm((f) => ({ ...f, professeur: e.target.value })) }, /* @__PURE__ */ React.createElement("option", { value: "" }, professeursOptions.length ? "-- S\xE9lectionner --" : "-- Aucun professeur enregistr\xE9 (page Professeurs) --"), professeursOptions.map((p) => /* @__PURE__ */ React.createElement("option", { key: p, value: p }, p))), /* @__PURE__ */ React.createElement(Input, { label: "Volume horaire (h)", type: "number", value: form.heures, onChange: (e) => setForm((f) => ({ ...f, heures: e.target.value })) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowModal(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleSave, disabled: !form.intitule || !form.professeur || !(form.filieres || []).length }, editItem ? "Mettre \xE0 jour \u2192 SharePoint" : "Enregistrer \u2192 SharePoint"))));
+  ), f)))), /* @__PURE__ */ React.createElement("div", { className: "eco-grid2", style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" } }, /* @__PURE__ */ React.createElement(Sel, { label: "Professeur * (liste \u2014 page Professeurs)", value: form.professeurCin, onChange: (e) => {
+    const p = professeursRecords.find((pr) => pr.cin === e.target.value);
+    setForm((f) => ({ ...f, professeurCin: e.target.value, professeur: p ? `${p.prenom} ${p.nom}` : "" }));
+  } }, /* @__PURE__ */ React.createElement("option", { value: "" }, professeursRecords.length ? "-- S\xE9lectionner --" : "-- Aucun professeur enregistr\xE9 (page Professeurs) --"), professeursRecords.map((p) => /* @__PURE__ */ React.createElement("option", { key: p.cin || p.id, value: p.cin }, `${p.prenom} ${p.nom} \u2014 CIN ${p.cin || "non renseign\xE9"}`))), /* @__PURE__ */ React.createElement(Input, { label: "Volume horaire (h)", type: "number", value: form.heures, onChange: (e) => setForm((f) => ({ ...f, heures: e.target.value })) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "light", onClick: () => setShowModal(false) }, "Annuler"), /* @__PURE__ */ React.createElement(Btn, { onClick: handleSave, disabled: !form.intitule || !form.professeurCin || !(form.filieres || []).length }, editItem ? "Mettre \xE0 jour \u2192 SharePoint" : "Enregistrer \u2192 SharePoint"))));
 }
 const TYPES_DOCUMENT_DEMANDE = ["Attestation d'inscription", "Attestation de scolarit\xE9", "Attestation de r\xE9ussite", "Relev\xE9 de notes", "Autre"];
 const STATUTS_DEMANDE = ["En attente", "En cours", "Pr\xEAte", "D\xE9livr\xE9e", "Rejet\xE9e"];
@@ -1911,7 +1919,6 @@ function Pointage({ data, setData, role, user, toast, pointageFiltreCible, setPo
   const estKawtar = EMAILS_ACCUSE_RECEPTION.includes(monEmail);
   const estFatimaZahra = EMAILS_TRAITEMENT_PAIEMENT.includes(monEmail);
   const monProfesseur = (data.professeurs || []).find((p) => p.email && user?.email && p.email.toLowerCase() === user.email.toLowerCase());
-  const identiteMonProfesseur = monProfesseur ? `${monProfesseur.nom || ""} ${monProfesseur.prenom || ""} (CIN: ${monProfesseur.cin || "\u2014"})`.replace(/\s+/g, " ").trim() : null;
   const [showFicheId, setShowFicheId] = useState(null);
   const [showNouvelleFiche, setShowNouvelleFiche] = useState(false);
   const [moisNouvelleFiche, setMoisNouvelleFiche] = useState((/* @__PURE__ */ new Date()).toISOString().slice(0, 7));
@@ -2215,7 +2222,7 @@ function Pointage({ data, setData, role, user, toast, pointageFiltreCible, setPo
     if (ficheOuverte) {
       const seances = seancesDeFiche(ficheOuverte.id).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
       const totalHeures = seances.reduce((s, x) => s + (x.nbHeures || 0), 0);
-      const modulesOptions = (data.cours || []).filter((c) => c.professeur === identiteMonProfesseur);
+      const modulesOptions = (data.cours || []).filter((c) => c.professeurCin === monProfesseur?.cin);
       const toutesConfirmees = seances.length > 0 && seances.every((s) => s.confirmee);
       const periode = periodeDuMois(ficheOuverte.mois);
       return /* @__PURE__ */ React.createElement(
@@ -2598,6 +2605,7 @@ function EmploiDuTemps({ data, setData, role, user, toast }) {
       Seance: form.seance || "",
       Module: form.module || "",
       Professeur: moduleChoisi?.professeur || "",
+      ProfesseurCIN: moduleChoisi?.professeurCin || "",
       Salle: moduleChoisi?.salle || "",
       TypeRecurrence: typeRecurrenceEffectif,
       DateDebut: form.dateDebut || "",
@@ -2615,6 +2623,7 @@ function EmploiDuTemps({ data, setData, role, user, toast }) {
         id: editItem.id,
         _spId: editItem._spId,
         professeur: moduleChoisi?.professeur || "",
+        professeurCin: moduleChoisi?.professeurCin || "",
         typeRecurrence: typeRecurrenceEffectif,
         dateFin: typeRecurrenceEffectif === "Unique" ? form.dateDebut : form.dateFin,
         datesExclues: editItem.datesExclues || []
@@ -2632,6 +2641,7 @@ function EmploiDuTemps({ data, setData, role, user, toast }) {
         ...form,
         id: Date.now(),
         professeur: moduleChoisi?.professeur || "",
+        professeurCin: moduleChoisi?.professeurCin || "",
         typeRecurrence: typeRecurrenceEffectif,
         dateFin: typeRecurrenceEffectif === "Unique" ? form.dateDebut : form.dateFin,
         datesExclues: []
@@ -5973,7 +5983,7 @@ const NAV_ITEMS = {
   parametrage: { label: "Param\xE9trage", icon: "\u{1F6E0}\uFE0F" },
   config: { label: "Config. SharePoint", icon: "\u2699\uFE0F" }
 };
-const APP_VERSION = "v3.171.0";
+const APP_VERSION = "v3.172.0";
 const APP_DATE = "04 Ao\xFBt 2026";
 const MSAL_CONFIG = {
   clientId: "0d52fee7-c6cf-4374-8063-395b2add8c91",
@@ -6386,10 +6396,10 @@ const SP_LISTS_SCHEMA = {
   ECOGEST_Professeurs: ["Nom", "Prenom", "CIN", "Email", "Telephone", "Specialite", "Matiere", "Grade", "TypeContrat", "Statut"],
   ECOGEST_Filieres: ["Code", "Intitule", "Niveau", "Duree", "Capacite", "Frais", "Statut", "Description", "Responsable", "Couleur", "Accreditation", "TypeSeances"],
   ECOGEST_Visiteurs: ["Nom", "Prenom", "CIN", "DateNaissance", "LieuNaissance", "Genre", "Email", "Telephone", "Adresse", "Ville", "Quartier", "BacAnnee", "BacMention", "BacSerie", "Etablissement", "FiliereS", "DateVisite", "Source", "Statut", "Observations", "AnneeUniversitaire", "RecuPar"],
-  ECOGEST_Notes: ["EtudiantId", "NomEtudiant", "NumInscription", "Module", "Filiere", "Semestre", "TypeEvaluation", "Note", "DateEvaluation", "Enseignant"],
-  ECOGEST_Presences: ["EtudiantId", "NomEtudiant", "NumInscription", "Module", "CodeModule", "DatePresence", "Heure", "Statut", "Motif", "Enseignant", "Filiere", "Seance", "Semestre", "DocumentJustification", "JustifiePar", "DateJustification"],
-  ECOGEST_Cours: ["Intitule", "Departement", "ResponsablePedagogique", "Semestre", "Filiere", "Professeur", "HeuresTotal", "Salle", "DateCC", "DateExamen"],
-  ECOGEST_EmploiDuTemps: ["Filiere", "Semestre", "JourSemaine", "Seance", "Module", "Professeur", "Salle", "TypeRecurrence", "DateDebut", "DateFin", "DatesExclues", "EstRattrapage", "LienTeams", "LienEnregistrements"],
+  ECOGEST_Notes: ["EtudiantId", "NomEtudiant", "NumInscription", "Module", "Filiere", "Semestre", "TypeEvaluation", "Note", "DateEvaluation", "Enseignant", "EnseignantCIN"],
+  ECOGEST_Presences: ["EtudiantId", "NomEtudiant", "NumInscription", "Module", "CodeModule", "DatePresence", "Heure", "Statut", "Motif", "Enseignant", "EnseignantCIN", "Filiere", "Seance", "Semestre", "DocumentJustification", "JustifiePar", "DateJustification"],
+  ECOGEST_Cours: ["Intitule", "Departement", "ResponsablePedagogique", "Semestre", "Filiere", "Professeur", "ProfesseurCIN", "HeuresTotal", "Salle", "DateCC", "DateExamen"],
+  ECOGEST_EmploiDuTemps: ["Filiere", "Semestre", "JourSemaine", "Seance", "Module", "Professeur", "ProfesseurCIN", "Salle", "TypeRecurrence", "DateDebut", "DateFin", "DatesExclues", "EstRattrapage", "LienTeams", "LienEnregistrements"],
   ECOGEST_Annonces: ["Titre", "Contenu", "Auteur", "Cible", "DateAnnonce", "DateExpiration", "Priorite", "Statut"],
   ECOGEST_Paiements: ["EtudiantId", "NumInscription", "NomEtudiant", "Filiere", "AnneeScolaire", "TotalAPayer", "TotalPaye", "Solde", "Statut", "RemisesJSON", "PenalitesJSON"],
   // Chaque versement est un enregistrement isolé (une ligne = un paiement),
@@ -6690,8 +6700,8 @@ async function loadAllFromSP(token) {
       tarif: [],
       documents: []
     })),
-    notes: notes.map((n) => ({ _spId: n._spId, id: n._spId, etudiantId: g(n, "EtudiantId"), etudiant: g(n, "NomEtudiant") || g(n, "Etudiant"), numInscription: g(n, "NumInscription"), module: g(n, "Module"), filiere: g(n, "Filiere"), semestre: g(n, "Semestre"), typeEvaluation: g(n, "TypeEvaluation") || "Contr\xF4le continu", note: parseFloat(g(n, "Note") || 0), date: g(n, "DateEvaluation") || g(n, "DateNote"), enseignant: g(n, "Enseignant") })),
-    presences: presences.map((p) => ({ _spId: p._spId, id: p._spId, etudiantId: g(p, "EtudiantId"), etudiant: g(p, "NomEtudiant") || g(p, "Etudiant"), numInscription: g(p, "NumInscription"), module: g(p, "Module"), codeModule: g(p, "CodeModule"), date: g(p, "DatePresence"), heure: g(p, "Heure"), statut: g(p, "Statut"), motif: g(p, "Motif"), enseignant: g(p, "Enseignant"), filiere: g(p, "Filiere"), seance: g(p, "Seance"), semestre: g(p, "Semestre"), documentJustification: g(p, "DocumentJustification"), justifiePar: g(p, "JustifiePar"), dateJustification: g(p, "DateJustification") })),
+    notes: notes.map((n) => ({ _spId: n._spId, id: n._spId, etudiantId: g(n, "EtudiantId"), etudiant: g(n, "NomEtudiant") || g(n, "Etudiant"), numInscription: g(n, "NumInscription"), module: g(n, "Module"), filiere: g(n, "Filiere"), semestre: g(n, "Semestre"), typeEvaluation: g(n, "TypeEvaluation") || "Contr\xF4le continu", note: parseFloat(g(n, "Note") || 0), date: g(n, "DateEvaluation") || g(n, "DateNote"), enseignant: g(n, "Enseignant"), enseignantCin: g(n, "EnseignantCIN") })),
+    presences: presences.map((p) => ({ _spId: p._spId, id: p._spId, etudiantId: g(p, "EtudiantId"), etudiant: g(p, "NomEtudiant") || g(p, "Etudiant"), numInscription: g(p, "NumInscription"), module: g(p, "Module"), codeModule: g(p, "CodeModule"), date: g(p, "DatePresence"), heure: g(p, "Heure"), statut: g(p, "Statut"), motif: g(p, "Motif"), enseignant: g(p, "Enseignant"), enseignantCin: g(p, "EnseignantCIN"), filiere: g(p, "Filiere"), seance: g(p, "Seance"), semestre: g(p, "Semestre"), documentJustification: g(p, "DocumentJustification"), justifiePar: g(p, "JustifiePar"), dateJustification: g(p, "DateJustification") })),
     cours: cours.map((c) => {
       const filiereRaw = g(c, "Filiere");
       return {
@@ -6704,6 +6714,7 @@ async function loadAllFromSP(token) {
         filieresListe: filiereRaw ? filiereRaw.split("|").map((s) => s.trim()).filter(Boolean) : [],
         semestre: g(c, "Semestre"),
         professeur: g(c, "Professeur") || g(c, "Enseignant"),
+        professeurCin: g(c, "ProfesseurCIN"),
         heures: parseInt(g(c, "HeuresTotal") || g(c, "Heures") || 0),
         salle: g(c, "Salle"),
         dateCC: g(c, "DateCC"),
@@ -6719,6 +6730,7 @@ async function loadAllFromSP(token) {
       seance: g(e, "Seance"),
       module: g(e, "Module"),
       professeur: g(e, "Professeur"),
+      professeurCin: g(e, "ProfesseurCIN"),
       salle: g(e, "Salle"),
       typeRecurrence: g(e, "TypeRecurrence") || "Hebdomadaire",
       dateDebut: g(e, "DateDebut"),
